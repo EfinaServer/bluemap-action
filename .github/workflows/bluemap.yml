@@ -36,7 +36,7 @@ on:
         required: false
         description: "BlueMap version"
         type: string
-        default: "5.5"
+        default: "5.12"
       # Misc
       workdir_path:
         required: true

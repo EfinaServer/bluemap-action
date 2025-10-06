@@ -22,7 +22,7 @@ api = PterodactylClient(API_URL, API_TOKEN)
 def pydactyl_get_latest_backup_attributes() -> str:
     raw_data = api.client.servers.backups.list_backups(SERVER_ID)
     logger.debug(raw_data)
-    latest_backup_attributes = raw_data["data"][-1]["attributes"]
+    latest_backup_attributes = raw_data["data"][0]["attributes"]
     logger.debug(latest_backup_attributes)
     if latest_backup_attributes["is_successful"]:
         return latest_backup_attributes
