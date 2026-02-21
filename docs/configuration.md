@@ -167,11 +167,13 @@ compression: GZIP           # 壓縮方式
 | `{projectName}` | 專案名稱（來自 `name` 欄位或目錄名稱） | `My Server` |
 | `{renderTime}` | 渲染執行時間戳（Asia/Taipei 時區） | `2025-01-15 14:30 CST` |
 
-支援語言：
+內建的 BlueMap 翻譯檔：
 - English (`en.conf`)
 - 简体中文 (`zh-CN.conf`)
 - 繁體中文 台灣 (`zh-TW.conf`)
 - 繁體中文 香港 (`zh-HK.conf`)
+
+這些檔案來自 BlueMap 本身的翻譯，僅保留上述語言並移除其餘未使用的語言設定。
 
 ## 新增伺服器
 

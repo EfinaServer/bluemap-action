@@ -102,11 +102,11 @@ bluemap-action/
 
 ### `internal/lang`
 
-嵌入式語言檔案管理：
+BlueMap 翻譯檔案部署：
 
-- 語言檔案透過 `//go:embed` 編譯進二進位檔
+- 將 BlueMap 本身的翻譯檔案透過 `//go:embed` 編譯進二進位檔
+- 僅保留所需語言 (en, zh-CN, zh-TW, zh-HK)，移除未使用的語言設定
 - 部署時替換佔位符：`{toolVersion}`、`{minecraftVersion}`、`{projectName}`、`{renderTime}`
-- 支援語言：English、简体中文、繁體中文 (台灣)、繁體中文 (香港)
 
 ### `internal/netlify`
 

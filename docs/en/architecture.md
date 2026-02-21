@@ -104,11 +104,11 @@ Manages BlueMap CLI download and execution:
 
 ### `internal/lang`
 
-Embedded language file management:
+BlueMap translation file deployment:
 
-- Language files are compiled into the binary via `//go:embed`
+- Bundles BlueMap's own translation files into the binary via `//go:embed`
+- Keeps only the required languages (en, zh-CN, zh-TW, zh-HK) and removes unused language settings
 - Placeholders substituted at deploy time: `{toolVersion}`, `{minecraftVersion}`, `{projectName}`, `{renderTime}`
-- Supported languages: English, Simplified Chinese, Traditional Chinese (Taiwan), Traditional Chinese (Hong Kong)
 
 ### `internal/netlify`
 
