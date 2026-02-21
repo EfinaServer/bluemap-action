@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/EfinaServer/bluemap-action/internal/analyzer"
+	"github.com/EfinaServer/bluemap-action/internal/assets"
 	"github.com/EfinaServer/bluemap-action/internal/bluemap"
 	"github.com/EfinaServer/bluemap-action/internal/config"
 	"github.com/EfinaServer/bluemap-action/internal/extractor"
@@ -140,7 +141,13 @@ func main() {
 		log.Fatalf("error during rendering: %v", err)
 	}
 
-	// Step 7: Analyze web output size after rendering.
+	// Step 7: Rewrite asset references to compressed variants.
+	fmt.Printf("\n  rewriting asset references to compressed variants...\n")
+	if err := assets.RewriteCompressedRefs(srv.Dir); err != nil {
+		log.Fatalf("error rewriting asset references: %v", err)
+	}
+
+	// Step 8: Analyze web output size after rendering.
 	fmt.Println()
 	webSize, err := analyzer.AnalyzeWebOutput(srv.Dir)
 	if err != nil {

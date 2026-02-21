@@ -6,24 +6,13 @@ import (
 	"path/filepath"
 )
 
-const netlifyToml = `# Rewrite .prbm requests to .prbm.gz files
-[[redirects]]
-from = "/*.prbm"
-to = "/:splat.prbm.gz"
-status = 200
-
-# Rewrite textures.json requests to textures.json.gz
-[[redirects]]
-from = "/*/textures.json"
-to = "/:splat/textures.json.gz"
-status = 200
-
-# SPA fallback (must be last — Netlify matches redirects in order)
+const netlifyToml = `# SPA fallback
 [[redirects]]
 from = "/*"
 to = "/index.html"
 status = 200
 
+# Compressed asset headers (JS references .prbm.gz and textures.json.gz directly)
 [[headers]]
   for = "/*.json.gz"
   [headers.values]
