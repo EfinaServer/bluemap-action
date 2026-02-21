@@ -1,55 +1,93 @@
 # bluemap-action
 
-A reusable action to deploy minecraft maps into Netlify.
+自動化 Minecraft 3D 地圖渲染與部署工具。從 [Pterodactyl](https://pterodactyl.io/) 面板下載世界備份，使用 [BlueMap](https://bluemap.bluecolored.de/) CLI 渲染 3D 地圖，並部署為靜態網站至 [Netlify](https://www.netlify.com/)。
 
-## Reusable Workflow
+## 特色
 
-本專案提供一個 [reusable workflow](https://docs.github.com/en/actions/sharing-automations/reusing-workflows)，讓其他 repository 可以直接呼叫來建置並部署 Minecraft 地圖。
+- **一鍵自動化** — 從備份下載到地圖部署，全程自動
+- **Reusable Workflow** — 其他 repository 直接呼叫，無需自行撰寫複雜 CI 流程
+- **增量渲染** — 透過快取機制，僅渲染變動的區塊
+- **多伺服器支援** — 單一 workflow 檔案可同時建置多個伺服器的地圖
+- **多語言介面** — 支援 English、简体中文、繁體中文 (台灣)、繁體中文 (香港)
 
-### 前置準備
+## 快速開始
 
-在你的 repository 中需要：
+### 1. 準備伺服器目錄
 
-1. 一個伺服器目錄（例如 `onlinemap-01/`），內含：
-   - `config.toml` — 伺服器設定檔（格式見[下方說明](#config-format-toml)）
-   - `config/` — BlueMap 設定檔（maps、storages、core.conf、webapp.conf）
-2. 在 GitHub repository 的 **Settings → Secrets and variables → Actions** 中設定以下 secrets：
-   - `PTERODACTYL_PANEL_URL` — Pterodactyl 面板網址（例如 `https://panel.example.com`）
-   - `PTERODACTYL_API_KEY` — Pterodactyl client API key
-   - `NETLIFY_AUTH_TOKEN` — Netlify 認證 token（若需部署至 Netlify）
+在你的 repository 中建立伺服器目錄，包含 bluemap-action 設定檔與 BlueMap 設定檔：
 
-### 基本用法
+```
+onlinemap-01/
+├── config.toml              # bluemap-action 設定（見下方）
+└── config/
+    ├── core.conf             # BlueMap 核心設定
+    ├── webapp.conf           # Web 介面設定
+    ├── maps/
+    │   ├── overworld.conf    # 主世界地圖
+    │   ├── nether.conf       # 地獄地圖
+    │   └── end.conf          # 終界地圖
+    └── storages/
+        └── file.conf         # 檔案儲存設定
+```
 
-在你的 repository 建立一個 workflow 檔案，例如 `.github/workflows/build-map.yml`：
+`config.toml` 內容：
+
+```toml
+server_id       = "8e22b0c9"     # Pterodactyl 伺服器識別碼
+server_type     = "vanilla"      # "vanilla" 或 "plugin"
+world_name      = "world"        # 世界資料夾名稱
+mc_version      = "1.21.11"      # Minecraft 版本
+bluemap_version = "5.16"         # BlueMap CLI 版本
+name            = "My Server"    # 顯示名稱（選填）
+```
+
+> 完整設定說明見 [docs/configuration.md](docs/configuration.md)。
+
+### 2. 設定 GitHub Secrets
+
+在你的 repository 的 **Settings → Secrets and variables → Actions** 中設定：
+
+| Secret | 說明 |
+|---|---|
+| `PTERODACTYL_PANEL_URL` | Pterodactyl 面板網址（例如 `https://panel.example.com`） |
+| `PTERODACTYL_API_KEY` | Pterodactyl client API key |
+| `NETLIFY_AUTH_TOKEN` | Netlify 認證 token（部署至 Netlify 時需要） |
+
+### 3. 建立 Workflow
+
+在你的 repository 建立 `.github/workflows/build-map.yml`：
 
 ```yaml
 name: Build Map
 
 on:
   schedule:
-    - cron: "0 0 * * *"  # 每天執行一次，依需求調整
-  workflow_dispatch:       # 允許手動觸發
+    - cron: "0 0 * * *"    # 每天執行
+  workflow_dispatch:         # 允許手動觸發
 
 jobs:
   build:
     uses: EfinaServer/bluemap-action/.github/workflows/build-map.yml@main
     with:
       server-directory: onlinemap-01
+      netlify-site-id: your-netlify-site-id
     secrets:
       PTERODACTYL_PANEL_URL: ${{ secrets.PTERODACTYL_PANEL_URL }}
       PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 ```
 
+## Reusable Workflow 參考
+
 ### Inputs
 
 | 名稱 | 必填 | 預設值 | 說明 |
 |---|---|---|---|
-| `server-directory` | **是** | — | 包含 `config.toml` 的伺服器目錄名稱（例如 `onlinemap-01`） |
+| `server-directory` | **是** | — | 包含 `config.toml` 的伺服器目錄名稱 |
 | `bluemap-action-version` | 否 | `latest` | bluemap-action 的 release tag（例如 `v1.0.0`） |
 | `java-version` | 否 | `21` | 用於 BlueMap CLI 渲染的 Java 版本 |
-| `deploy-to-netlify` | 否 | `true` | 是否將渲染結果部署至 Netlify |
-| `netlify-site-id` | 否 | — | Netlify site ID（部署至 Netlify 時必填） |
+| `deploy-to-netlify` | 否 | `true` | 是否部署至 Netlify |
+| `netlify-site-id` | 否 | — | Netlify site ID（部署時必填） |
 
 ### Secrets
 
@@ -59,16 +97,31 @@ jobs:
 | `PTERODACTYL_API_KEY` | **是** | Pterodactyl client API key |
 | `NETLIFY_AUTH_TOKEN` | 條件性 | Netlify 認證 token（`deploy-to-netlify` 為 `true` 時必填） |
 
-### 完整範例
+### 工作流程執行步驟
 
-以下範例展示所有可用選項，包括指定特定版本與 Netlify 部署設定：
+```
+Checkout → 安裝 Java → 下載 bluemap-action → 還原快取 → 建置地圖 → 部署至 Netlify
+```
+
+1. **Checkout** — 取出呼叫方的 repository
+2. **Set up Java** — 安裝 Temurin JDK（預設版本 21）
+3. **Download bluemap-action** — 從 GitHub Releases 下載指定版本的二進位檔
+4. **Restore web/maps cache** — 還原上次渲染的快取，實現增量渲染
+5. **Build map** — 執行 bluemap-action（下載備份 → 擷取世界 → 渲染地圖）
+6. **Deploy to Netlify** — 將渲染完成的靜態網站部署至 Netlify（可選）
+
+## 使用範例
+
+### 完整選項
+
+指定所有可用選項：
 
 ```yaml
 name: Build and Deploy Map
 
 on:
   schedule:
-    - cron: "0 4 * * 1"  # 每週一 04:00 UTC
+    - cron: "0 4 * * 1"    # 每週一 04:00 UTC
   workflow_dispatch:
 
 jobs:
@@ -86,9 +139,9 @@ jobs:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 ```
 
-### 多伺服器範例
+### 多伺服器
 
-若需要為多個伺服器分別建置地圖，可定義多個 job：
+為多個伺服器分別建置地圖，各 job 平行執行：
 
 ```yaml
 name: Build All Maps
@@ -122,7 +175,7 @@ jobs:
 
 ### 僅建置不部署
 
-若只想渲染地圖並下載 artifact，而不部署至 Netlify：
+若只想渲染地圖而不部署至 Netlify，渲染結果會以 artifact 上傳：
 
 ```yaml
 jobs:
@@ -136,85 +189,34 @@ jobs:
       PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
 ```
 
-渲染完成後，產出的靜態網站檔案會以 artifact（`bluemap-web-<server-directory>`）上傳，保留 7 天。
+## 獨立使用
 
----
-
-## bluemap-action Tool
-
-A Go tool that downloads the latest backup from Pterodactyl panel servers, extracts specified world directories, and deploys shared BlueMap language files with project-specific footer information.
-
-### Directory Structure
-
-```
-onlinemap-01/
-  config.toml    # Server config
-  world/         # Extracted after download
-  web/
-    lang/        # Generated by the tool (language files with footer info)
-onlinemap-02/
-  config.toml
-  world/
-  ...
-```
-
-### Config Format (TOML)
-
-Each server subdirectory must contain a `config.toml`:
-
-```toml
-# Pterodactyl server identifier
-server_id = "a1b2c3d4"
-
-# World directories to extract from the backup
-worlds = ["world", "world_nether", "world_the_end"]
-
-# Optional: project display name (defaults to directory name)
-name = "My Server"
-```
-
-### Environment Variables
-
-| Variable | Description |
-|---|---|
-| `PTERODACTYL_PANEL_URL` | Pterodactyl panel base URL (e.g. `https://panel.example.com`) |
-| `PTERODACTYL_API_KEY` | Pterodactyl client API key |
-
-### Usage
+bluemap-action 也可以作為獨立 CLI 工具使用，不透過 GitHub Actions：
 
 ```bash
-# Build
-go build -o bluemap-action ./cmd/bluemap-action/
+# 下載最新版本
+gh release download --repo EfinaServer/bluemap-action \
+  --pattern "bluemap-action-linux-amd64"
+chmod +x bluemap-action-linux-amd64
 
-# Build with version tag
-go build -ldflags "-X main.version=$(git describe --tags --always --dirty)" \
-  -o bluemap-action ./cmd/bluemap-action/
-
-# Run (scans current directory for subdirectories with config.toml)
+# 設定環境變數
 export PTERODACTYL_PANEL_URL="https://panel.example.com"
 export PTERODACTYL_API_KEY="your-api-key"
-./bluemap-action
 
-# Or specify a different base directory
-./bluemap-action -dir /path/to/server-configs
+# 執行
+./bluemap-action-linux-amd64 -dir onlinemap-01
 ```
 
-### How It Works
+支援平台：`linux/amd64`、`linux/arm64`、`darwin/amd64`、`darwin/arm64`、`windows/amd64`
 
-1. Scans the base directory for subdirectories containing `config.toml`
-2. For each server, fetches the latest successful backup via Pterodactyl Client API
-3. Downloads the backup archive (tar.gz)
-4. Extracts only the specified world directories into the server's subdirectory
-5. Deploys shared language files into each server's `web/lang/` directory, substituting the tool's git version, project name, and render time into the footer
+## 文件
 
-### Language Files
-
-Language files are embedded in the tool binary under `internal/lang/files/`. On each run, the tool copies these files to every server instance's `web/lang/` directory and substitutes the following placeholders:
-
-| Placeholder | Description |
+| 文件 | 說明 |
 |---|---|
-| `{toolVersion}` | Git version of the bluemap-action tool |
-| `{projectName}` | Project name (from `config.toml` `name` field, or directory name) |
-| `{renderTime}` | Timestamp of when the tool was executed (UTC) |
+| [docs/architecture.md](docs/architecture.md) | 專案架構、執行管線、模組說明與設計決策 |
+| [docs/configuration.md](docs/configuration.md) | 完整設定參考：config.toml、BlueMap 設定檔、環境變數 |
+| [docs/development.md](docs/development.md) | 從原始碼建置、程式碼規範、Release 流程 |
 
-Supported languages: English, 简体中文, 繁體中文 (台灣), 繁體中文 (香港)
+## License
+
+[MIT](LICENSE)
