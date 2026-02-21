@@ -10,15 +10,43 @@ import (
 
 // ServerConfig represents the TOML config for a single server directory.
 type ServerConfig struct {
-	ServerID string   `toml:"server_id"`
-	Worlds   []string `toml:"worlds"`
-	Name     string   `toml:"name"`
+	ServerID       string   `toml:"server_id"`
+	Worlds         []string `toml:"worlds"`
+	Name           string   `toml:"name"`
+	BlueMapVersion string   `toml:"bluemap_version"`
 }
 
 // LoadedServer holds a parsed config along with its directory path.
 type LoadedServer struct {
 	Dir    string
 	Config ServerConfig
+}
+
+// Load reads and validates a single config.toml from the given directory.
+func Load(dir string) (LoadedServer, error) {
+	configPath := filepath.Join(dir, "config.toml")
+
+	var cfg ServerConfig
+	if _, err := toml.DecodeFile(configPath, &cfg); err != nil {
+		return LoadedServer{}, fmt.Errorf("parsing %s: %w", configPath, err)
+	}
+
+	if cfg.ServerID == "" {
+		return LoadedServer{}, fmt.Errorf("%s: server_id is required", configPath)
+	}
+	if len(cfg.Worlds) == 0 {
+		return LoadedServer{}, fmt.Errorf("%s: at least one world is required", configPath)
+	}
+	if cfg.BlueMapVersion == "" {
+		return LoadedServer{}, fmt.Errorf("%s: bluemap_version is required", configPath)
+	}
+
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return LoadedServer{}, fmt.Errorf("resolving path %s: %w", dir, err)
+	}
+
+	return LoadedServer{Dir: absDir, Config: cfg}, nil
 }
 
 // LoadAll scans the given base directory for subdirectories containing a

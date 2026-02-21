@@ -2,4 +2,7 @@
 server_id = "8e22b0c9"
 
 # World directories to extract from the backup
-worlds = ["world"]
+worlds = ["world", "world_nether"]
+
+# BlueMap CLI version to download and use for rendering
+bluemap_version = "5.16"
