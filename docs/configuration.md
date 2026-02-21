@@ -1,5 +1,7 @@
 # Configuration
 
+> **[English](en/configuration.md)**
+
 本文件說明 bluemap-action 所有設定選項，包含伺服器設定檔、BlueMap 設定檔與環境變數。
 
 ## 伺服器設定檔 (`config.toml`)

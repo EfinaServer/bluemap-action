@@ -1,5 +1,7 @@
 # bluemap-action
 
+> **[English](README.en.md)**
+
 自動化 Minecraft 3D 地圖渲染與部署工具。從 [Pterodactyl](https://pterodactyl.io/) 面板下載世界備份，使用 [BlueMap](https://bluemap.bluecolored.de/) CLI 渲染 3D 地圖，並部署為靜態網站至 [Netlify](https://www.netlify.com/)。
 
 ## 特色

@@ -1,5 +1,7 @@
 # Architecture
 
+> **[English](en/architecture.md)**
+
 本文件說明 bluemap-action 的內部架構、執行流程與設計決策。
 
 ## 專案結構

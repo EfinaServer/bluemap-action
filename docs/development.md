@@ -1,5 +1,7 @@
 # Development
 
+> **[English](en/development.md)**
+
 本文件說明如何從原始碼建置 bluemap-action、程式碼規範，以及 CI/CD 流程。
 
 ## 建置
