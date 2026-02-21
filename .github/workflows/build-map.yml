@@ -69,24 +69,19 @@ jobs:
           chmod +x /usr/local/bin/bluemap-action-linux-amd64
           mv /usr/local/bin/bluemap-action-linux-amd64 /usr/local/bin/bluemap-action
 
+      - name: Restore web/maps cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ inputs.server-directory }}/web/maps
+          key: bluemap-maps-${{ inputs.server-directory }}-${{ github.run_id }}
+          restore-keys: |
+            bluemap-maps-${{ inputs.server-directory }}-
+
       - name: Build map
         env:
           PTERODACTYL_PANEL_URL: ${{ secrets.PTERODACTYL_PANEL_URL }}
           PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
         run: bluemap-action -dir "${{ inputs.server-directory }}"
-
-      - name: Sanitize artifact name
-        id: artifact
-        run: echo "name=bluemap-web-${SERVER_DIR//\//-}" >> "$GITHUB_OUTPUT"
-        env:
-          SERVER_DIR: ${{ inputs.server-directory }}
-
-      - name: Upload web output
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.artifact.outputs.name }}
-          path: ${{ inputs.server-directory }}/web/
-          retention-days: 7
 
       - name: Deploy to Netlify
         if: inputs.deploy-to-netlify
