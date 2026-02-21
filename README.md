@@ -2,6 +2,144 @@
 
 A reusable action to deploy minecraft maps into Netlify.
 
+## Reusable Workflow
+
+本專案提供一個 [reusable workflow](https://docs.github.com/en/actions/sharing-automations/reusing-workflows)，讓其他 repository 可以直接呼叫來建置並部署 Minecraft 地圖。
+
+### 前置準備
+
+在你的 repository 中需要：
+
+1. 一個伺服器目錄（例如 `onlinemap-01/`），內含：
+   - `config.toml` — 伺服器設定檔（格式見[下方說明](#config-format-toml)）
+   - `config/` — BlueMap 設定檔（maps、storages、core.conf、webapp.conf）
+2. 在 GitHub repository 的 **Settings → Secrets and variables → Actions** 中設定以下 secrets：
+   - `PTERODACTYL_PANEL_URL` — Pterodactyl 面板網址（例如 `https://panel.example.com`）
+   - `PTERODACTYL_API_KEY` — Pterodactyl client API key
+   - `NETLIFY_AUTH_TOKEN` — Netlify 認證 token（若需部署至 Netlify）
+
+### 基本用法
+
+在你的 repository 建立一個 workflow 檔案，例如 `.github/workflows/build-map.yml`：
+
+```yaml
+name: Build Map
+
+on:
+  schedule:
+    - cron: "0 0 * * *"  # 每天執行一次，依需求調整
+  workflow_dispatch:       # 允許手動觸發
+
+jobs:
+  build:
+    uses: EfinaServer/bluemap-action/.github/workflows/build-map.yml@main
+    with:
+      server-directory: onlinemap-01
+    secrets:
+      PTERODACTYL_PANEL_URL: ${{ secrets.PTERODACTYL_PANEL_URL }}
+      PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+```
+
+### Inputs
+
+| 名稱 | 必填 | 預設值 | 說明 |
+|---|---|---|---|
+| `server-directory` | **是** | — | 包含 `config.toml` 的伺服器目錄名稱（例如 `onlinemap-01`） |
+| `bluemap-action-version` | 否 | `latest` | bluemap-action 的 release tag（例如 `v1.0.0`） |
+| `java-version` | 否 | `21` | 用於 BlueMap CLI 渲染的 Java 版本 |
+| `deploy-to-netlify` | 否 | `true` | 是否將渲染結果部署至 Netlify |
+| `netlify-site-id` | 否 | — | Netlify site ID（部署至 Netlify 時必填） |
+
+### Secrets
+
+| 名稱 | 必填 | 說明 |
+|---|---|---|
+| `PTERODACTYL_PANEL_URL` | **是** | Pterodactyl 面板網址 |
+| `PTERODACTYL_API_KEY` | **是** | Pterodactyl client API key |
+| `NETLIFY_AUTH_TOKEN` | 條件性 | Netlify 認證 token（`deploy-to-netlify` 為 `true` 時必填） |
+
+### 完整範例
+
+以下範例展示所有可用選項，包括指定特定版本與 Netlify 部署設定：
+
+```yaml
+name: Build and Deploy Map
+
+on:
+  schedule:
+    - cron: "0 4 * * 1"  # 每週一 04:00 UTC
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: EfinaServer/bluemap-action/.github/workflows/build-map.yml@main
+    with:
+      server-directory: onlinemap-01
+      bluemap-action-version: v1.0.0
+      java-version: "21"
+      deploy-to-netlify: true
+      netlify-site-id: your-netlify-site-id
+    secrets:
+      PTERODACTYL_PANEL_URL: ${{ secrets.PTERODACTYL_PANEL_URL }}
+      PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+```
+
+### 多伺服器範例
+
+若需要為多個伺服器分別建置地圖，可定義多個 job：
+
+```yaml
+name: Build All Maps
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  server-01:
+    uses: EfinaServer/bluemap-action/.github/workflows/build-map.yml@main
+    with:
+      server-directory: onlinemap-01
+      netlify-site-id: site-id-for-server-01
+    secrets:
+      PTERODACTYL_PANEL_URL: ${{ secrets.PTERODACTYL_PANEL_URL }}
+      PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+
+  server-02:
+    uses: EfinaServer/bluemap-action/.github/workflows/build-map.yml@main
+    with:
+      server-directory: onlinemap-02
+      netlify-site-id: site-id-for-server-02
+    secrets:
+      PTERODACTYL_PANEL_URL: ${{ secrets.PTERODACTYL_PANEL_URL }}
+      PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+```
+
+### 僅建置不部署
+
+若只想渲染地圖並下載 artifact，而不部署至 Netlify：
+
+```yaml
+jobs:
+  build:
+    uses: EfinaServer/bluemap-action/.github/workflows/build-map.yml@main
+    with:
+      server-directory: onlinemap-01
+      deploy-to-netlify: false
+    secrets:
+      PTERODACTYL_PANEL_URL: ${{ secrets.PTERODACTYL_PANEL_URL }}
+      PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
+```
+
+渲染完成後，產出的靜態網站檔案會以 artifact（`bluemap-web-<server-directory>`）上傳，保留 7 天。
+
+---
+
 ## bluemap-action Tool
 
 A Go tool that downloads the latest backup from Pterodactyl panel servers, extracts specified world directories, and deploys shared BlueMap language files with project-specific footer information.
