@@ -75,10 +75,16 @@ jobs:
           PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
         run: bluemap-action -dir "${{ inputs.server-directory }}"
 
+      - name: Sanitize artifact name
+        id: artifact
+        run: echo "name=bluemap-web-${SERVER_DIR//\//-}" >> "$GITHUB_OUTPUT"
+        env:
+          SERVER_DIR: ${{ inputs.server-directory }}
+
       - name: Upload web output
         uses: actions/upload-artifact@v4
         with:
-          name: bluemap-web-${{ inputs.server-directory }}
+          name: ${{ steps.artifact.outputs.name }}
           path: ${{ inputs.server-directory }}/web/
           retention-days: 7
 
