@@ -28,13 +28,13 @@ func EnsureCLI(serverDir, version string) (string, error) {
 	jarPath := filepath.Join(serverDir, CLIJarName(version))
 
 	if info, err := os.Stat(jarPath); err == nil && info.Size() > 0 {
-		fmt.Printf("  BlueMap CLI %s already exists (%s)\n", version, formatSize(info.Size()))
+		fmt.Printf("  ✔  BlueMap CLI %s already cached (%s)\n", version, formatSize(info.Size()))
 		return jarPath, nil
 	}
 
 	url := DownloadURL(version)
-	fmt.Printf("  downloading BlueMap CLI %s ...\n", version)
-	fmt.Printf("    URL: %s\n", url)
+	fmt.Printf("  ⬇️  downloading BlueMap CLI %s\n", version)
+	fmt.Printf("     URL: %s\n", url)
 
 	client := &http.Client{Timeout: 10 * time.Minute}
 	resp, err := client.Get(url)
@@ -65,7 +65,7 @@ func EnsureCLI(serverDir, version string) (string, error) {
 		return "", fmt.Errorf("renaming temp file: %w", err)
 	}
 
-	fmt.Printf("    downloaded %s\n", formatSize(written))
+	fmt.Printf("  ✔  downloaded %s\n", formatSize(written))
 	return jarPath, nil
 }
 
