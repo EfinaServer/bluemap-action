@@ -14,6 +14,7 @@ import (
 	"github.com/EfinaServer/bluemap-action/internal/config"
 	"github.com/EfinaServer/bluemap-action/internal/extractor"
 	"github.com/EfinaServer/bluemap-action/internal/lang"
+	"github.com/EfinaServer/bluemap-action/internal/netlify"
 	"github.com/EfinaServer/bluemap-action/internal/pterodactyl"
 )
 
@@ -70,10 +71,11 @@ func main() {
 	worlds := srv.Config.ResolveWorlds()
 
 	fmt.Printf("=== %s (server: %s) ===\n", filepath.Base(srv.Dir), srv.Config.ServerID)
-	fmt.Printf("  server type:     %s\n", srv.Config.ServerType)
-	fmt.Printf("  world name:      %s\n", srv.Config.WorldName)
-	fmt.Printf("  worlds:          %v\n", worlds)
-	fmt.Printf("  bluemap version: %s\n\n", srv.Config.BlueMapVersion)
+	fmt.Printf("  server type:        %s\n", srv.Config.ServerType)
+	fmt.Printf("  world name:         %s\n", srv.Config.WorldName)
+	fmt.Printf("  worlds:             %v\n", worlds)
+	fmt.Printf("  minecraft version:  %s\n", srv.Config.MinecraftVersion)
+	fmt.Printf("  bluemap version:    %s\n\n", srv.Config.BlueMapVersion)
 
 	// Step 1: Download and extract world data from Pterodactyl backup.
 	client := pterodactyl.NewClient(panelURL, apiKey)
@@ -115,9 +117,10 @@ func main() {
 
 	langDir := filepath.Join(srv.Dir, "web", "lang")
 	langCfg := lang.DeployConfig{
-		ToolVersion: toolVersion,
-		ProjectName: projectName,
-		RenderTime:  renderTime,
+		ToolVersion:      toolVersion,
+		MinecraftVersion: srv.Config.MinecraftVersion,
+		ProjectName:      projectName,
+		RenderTime:       renderTime,
 	}
 
 	fmt.Printf("\n  deploying language files to %s\n", langDir)
@@ -125,13 +128,19 @@ func main() {
 		log.Fatalf("error deploying lang files: %v", err)
 	}
 
-	// Step 5: Execute BlueMap CLI rendering.
+	// Step 5: Deploy netlify.toml for static site hosting.
+	fmt.Printf("  deploying netlify.toml to %s\n", filepath.Join(srv.Dir, "web"))
+	if err := netlify.DeployConfig(srv.Dir); err != nil {
+		log.Fatalf("error deploying netlify.toml: %v", err)
+	}
+
+	// Step 6: Execute BlueMap CLI rendering.
 	fmt.Println()
 	if err := bluemap.Render(jarPath, srv.Dir, srv.Config.MinecraftVersion); err != nil {
 		log.Fatalf("error during rendering: %v", err)
 	}
 
-	// Step 6: Analyze web output size after rendering.
+	// Step 7: Analyze web output size after rendering.
 	fmt.Println()
 	webSize, err := analyzer.AnalyzeWebOutput(srv.Dir)
 	if err != nil {
