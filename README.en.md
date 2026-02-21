@@ -88,7 +88,7 @@ jobs:
 | `server-directory` | **Yes** | — | Server directory containing `config.toml` |
 | `bluemap-action-version` | No | `latest` | bluemap-action release tag (e.g. `v1.0.0`) |
 | `java-version` | No | `21` | Java version for BlueMap CLI rendering |
-| `deploy-to-netlify` | No | `true` | Whether to deploy to Netlify |
+| `deploy-to-netlify` | No | `true` | Whether to deploy to Netlify (set to `false` for render testing only) |
 | `netlify-site-id` | No | — | Netlify site ID (required when deploying) |
 
 ### Secrets
@@ -173,22 +173,6 @@ jobs:
       PTERODACTYL_PANEL_URL: ${{ secrets.PTERODACTYL_PANEL_URL }}
       PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-```
-
-### Build Only (No Deployment)
-
-Render the map without deploying to Netlify. The output will be uploaded as an artifact:
-
-```yaml
-jobs:
-  build:
-    uses: EfinaServer/bluemap-action/.github/workflows/build-map.yml@main
-    with:
-      server-directory: onlinemap-01
-      deploy-to-netlify: false
-    secrets:
-      PTERODACTYL_PANEL_URL: ${{ secrets.PTERODACTYL_PANEL_URL }}
-      PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
 ```
 
 ## Standalone Usage

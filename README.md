@@ -88,7 +88,7 @@ jobs:
 | `server-directory` | **是** | — | 包含 `config.toml` 的伺服器目錄名稱 |
 | `bluemap-action-version` | 否 | `latest` | bluemap-action 的 release tag（例如 `v1.0.0`） |
 | `java-version` | 否 | `21` | 用於 BlueMap CLI 渲染的 Java 版本 |
-| `deploy-to-netlify` | 否 | `true` | 是否部署至 Netlify |
+| `deploy-to-netlify` | 否 | `true` | 是否部署至 Netlify（設為 `false` 僅供測試渲染用） |
 | `netlify-site-id` | 否 | — | Netlify site ID（部署時必填） |
 
 ### Secrets
@@ -173,22 +173,6 @@ jobs:
       PTERODACTYL_PANEL_URL: ${{ secrets.PTERODACTYL_PANEL_URL }}
       PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-```
-
-### 僅建置不部署
-
-若只想渲染地圖而不部署至 Netlify，渲染結果會以 artifact 上傳：
-
-```yaml
-jobs:
-  build:
-    uses: EfinaServer/bluemap-action/.github/workflows/build-map.yml@main
-    with:
-      server-directory: onlinemap-01
-      deploy-to-netlify: false
-    secrets:
-      PTERODACTYL_PANEL_URL: ${{ secrets.PTERODACTYL_PANEL_URL }}
-      PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
 ```
 
 ## 獨立使用
