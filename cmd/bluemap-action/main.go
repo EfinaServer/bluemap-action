@@ -62,8 +62,12 @@ func main() {
 		log.Fatalf("loading config: %v", err)
 	}
 
+	worlds := srv.Config.ResolveWorlds()
+
 	fmt.Printf("=== %s (server: %s) ===\n", filepath.Base(srv.Dir), srv.Config.ServerID)
-	fmt.Printf("  worlds:          %v\n", srv.Config.Worlds)
+	fmt.Printf("  server type:     %s\n", srv.Config.ServerType)
+	fmt.Printf("  world name:      %s\n", srv.Config.WorldName)
+	fmt.Printf("  worlds:          %v\n", worlds)
 	fmt.Printf("  bluemap version: %s\n\n", srv.Config.BlueMapVersion)
 
 	// Step 1: Download and extract world data from Pterodactyl backup.
@@ -81,16 +85,15 @@ func main() {
 		log.Fatalf("error getting download URL: %v", err)
 	}
 
-	fmt.Printf("  downloading and extracting worlds: %v\n", srv.Config.Worlds)
+	fmt.Printf("  downloading and extracting worlds: %v\n", worlds)
 
-	if err := extractor.DownloadAndExtractWorlds(downloadURL, srv.Dir, srv.Config.Worlds); err != nil {
+	if err := extractor.DownloadAndExtractWorlds(downloadURL, srv.Dir, worlds); err != nil {
 		log.Fatalf("error extracting worlds: %v", err)
 	}
 
 	// Step 2: Analyze extracted world sizes.
 	fmt.Println()
-	reports, total := analyzer.AnalyzeWorlds(srv.Dir, srv.Config.Worlds)
-	analyzer.PrintWorldAnalysis(reports, total)
+	analyzer.PrintWorldAnalysis(srv.Config.ServerType, srv.Dir, worlds)
 
 	// Step 3: Download BlueMap CLI.
 	fmt.Println()
