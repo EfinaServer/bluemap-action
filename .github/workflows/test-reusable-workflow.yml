@@ -1,17 +1,7 @@
 name: Test Reusable Workflow
 
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/build-map.yml"
-      - "test/test-onlinemap/**"
-  pull_request:
-    paths:
-      - ".github/workflows/build-map.yml"
-      - "test/test-onlinemap/**"
+  workflow_dispatch: {}
 
 jobs:
   test-build-map:
