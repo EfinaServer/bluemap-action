@@ -88,6 +88,8 @@ jobs:
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ inputs.netlify-site-id }}
-        run: |
-          npm install -g netlify-cli
-          netlify deploy --dir="${{ inputs.server-directory }}/web" --prod
+        run: >-
+          npx netlify-cli deploy
+          --prod
+          --dir '${{ inputs.server-directory }}/web'
+          --message "Deploy from GitHub Actions at $(TZ='Asia/Taipei' date +'%Y-%m-%d %H:%M:%S %Z')"
