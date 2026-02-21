@@ -1,0 +1,93 @@
+name: Build Online Map
+
+on:
+  workflow_call:
+    inputs:
+      server-directory:
+        description: "Server directory containing config.toml (e.g. onlinemap-01)"
+        required: true
+        type: string
+      bluemap-action-version:
+        description: "bluemap-action release tag to use (e.g. v1.0.0). Defaults to latest."
+        required: false
+        type: string
+        default: "latest"
+      java-version:
+        description: "Java version for BlueMap CLI rendering"
+        required: false
+        type: string
+        default: "21"
+      deploy-to-netlify:
+        description: "Whether to deploy the rendered output to Netlify"
+        required: false
+        type: boolean
+        default: true
+      netlify-site-id:
+        description: "Netlify site ID for deployment (required if deploy-to-netlify is true)"
+        required: false
+        type: string
+    secrets:
+      PTERODACTYL_PANEL_URL:
+        description: "Pterodactyl panel base URL"
+        required: true
+      PTERODACTYL_API_KEY:
+        description: "Pterodactyl client API key"
+        required: true
+      NETLIFY_AUTH_TOKEN:
+        description: "Netlify authentication token (required if deploy-to-netlify is true)"
+        required: false
+
+jobs:
+  build-map:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+
+      - name: Download bluemap-action
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ inputs.bluemap-action-version }}" = "latest" ]; then
+            echo "Downloading latest release..."
+            gh release download --repo EfinaServer/bluemap-action \
+              --pattern "bluemap-action-linux-amd64" \
+              --dir /usr/local/bin
+          else
+            echo "Downloading ${{ inputs.bluemap-action-version }}..."
+            gh release download "${{ inputs.bluemap-action-version }}" \
+              --repo EfinaServer/bluemap-action \
+              --pattern "bluemap-action-linux-amd64" \
+              --dir /usr/local/bin
+          fi
+          chmod +x /usr/local/bin/bluemap-action-linux-amd64
+          mv /usr/local/bin/bluemap-action-linux-amd64 /usr/local/bin/bluemap-action
+
+      - name: Build map
+        env:
+          PTERODACTYL_PANEL_URL: ${{ secrets.PTERODACTYL_PANEL_URL }}
+          PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
+        run: bluemap-action -dir "${{ inputs.server-directory }}"
+
+      - name: Upload web output
+        uses: actions/upload-artifact@v4
+        with:
+          name: bluemap-web-${{ inputs.server-directory }}
+          path: ${{ inputs.server-directory }}/web/
+          retention-days: 7
+
+      - name: Deploy to Netlify
+        if: inputs.deploy-to-netlify
+        uses: nwtgck/actions-netlify@v3
+        with:
+          publish-dir: ${{ inputs.server-directory }}/web
+          production-deploy: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ inputs.netlify-site-id }}
