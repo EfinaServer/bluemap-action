@@ -1,0 +1,26 @@
+name: Test Reusable Workflow
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/build-map.yml"
+      - "test/test-onlinemap/**"
+  pull_request:
+    paths:
+      - ".github/workflows/build-map.yml"
+      - "test/test-onlinemap/**"
+
+jobs:
+  test-build-map:
+    uses: ./.github/workflows/build-map.yml
+    with:
+      server-directory: test/test-onlinemap
+      netlify-site-id: 0e027990-adef-4b7f-99e1-957d387a9128
+      deploy-to-netlify: true
+    secrets:
+      PTERODACTYL_PANEL_URL: ${{ secrets.PTERODACTYL_PANEL_URL }}
+      PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
