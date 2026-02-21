@@ -10,8 +10,8 @@ import (
 // It runs: java -jar <jarPath> -r
 // The working directory is set to serverDir so BlueMap picks up the config/ directory.
 // Stdout and stderr are streamed directly to the terminal so progress is visible.
-func Render(jarPath, serverDir string) error {
-	cmd := exec.Command("java", "-jar", jarPath, "-r")
+func Render(jarPath, serverDir, mcVersion string) error {
+	cmd := exec.Command("java", "-jar", jarPath, "-v", mcVersion, "-r")
 	cmd.Dir = serverDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

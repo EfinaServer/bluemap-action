@@ -52,7 +52,12 @@ func main() {
 	}
 
 	toolVersion := getVersion()
-	renderTime := time.Now().UTC().Format("2006-01-02 15:04 UTC")
+	loc, err := time.LoadLocation("Asia/Taipei")
+	if err != nil {
+		panic(err)
+	}
+
+	renderTime := time.Now().In(loc).Format("2006-01-02 15:04 MST")
 
 	fmt.Printf("bluemap-action %s\n\n", toolVersion)
 
@@ -122,7 +127,7 @@ func main() {
 
 	// Step 5: Execute BlueMap CLI rendering.
 	fmt.Println()
-	if err := bluemap.Render(jarPath, srv.Dir); err != nil {
+	if err := bluemap.Render(jarPath, srv.Dir, srv.Config.MinecraftVersion); err != nil {
 		log.Fatalf("error during rendering: %v", err)
 	}
 

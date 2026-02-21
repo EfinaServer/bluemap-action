@@ -19,6 +19,7 @@ type ServerConfig struct {
 	ServerType     string `toml:"server_type"`
 	WorldName      string `toml:"world_name"`
 	Name           string `toml:"name"`
+	MinecraftVersion string `toml:"mc_version"`
 	BlueMapVersion string `toml:"bluemap_version"`
 }
 
@@ -76,6 +77,9 @@ func Load(dir string) (LoadedServer, error) {
 	}
 	if cfg.WorldName == "" {
 		return LoadedServer{}, fmt.Errorf("%s: world_name is required", configPath)
+	}
+	if cfg.MinecraftVersion == "" {
+		return LoadedServer{}, fmt.Errorf("%s: mc_version is required", configPath)
 	}
 	if cfg.BlueMapVersion == "" {
 		return LoadedServer{}, fmt.Errorf("%s: bluemap_version is required", configPath)

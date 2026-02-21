@@ -15,6 +15,7 @@ var langFiles embed.FS
 // DeployConfig holds the values to substitute into language file placeholders.
 type DeployConfig struct {
 	ToolVersion string
+	MinecraftVersion string
 	ProjectName string
 	RenderTime  string
 }
@@ -44,6 +45,7 @@ func Deploy(targetDir string, cfg DeployConfig) error {
 
 		content := string(data)
 		content = strings.ReplaceAll(content, "{toolVersion}", cfg.ToolVersion)
+		content = strings.ReplaceAll(content, "{minecraftVersion}", cfg.MinecraftVersion)
 		content = strings.ReplaceAll(content, "{projectName}", cfg.ProjectName)
 		content = strings.ReplaceAll(content, "{renderTime}", cfg.RenderTime)
 

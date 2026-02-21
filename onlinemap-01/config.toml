@@ -4,10 +4,13 @@ server_id = "8e22b0c9"
 # Server type: "vanilla" or "plugin"
 # - vanilla: dimensions are subdirectories (world/DIM-1, world/DIM1)
 # - plugin:  dimensions are separate folders (world, world_nether, world_the_end)
-server_type = "plugin"
+server_type = "vanilla"
 
 # Base world folder name (e.g. "world", "survival", etc.)
 world_name = "world"
+
+# Minecarft Render version
+mc_version = "1.21.11"
 
 # BlueMap CLI version to download and use for rendering
 bluemap_version = "5.16"
