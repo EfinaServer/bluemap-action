@@ -167,11 +167,13 @@ Language files have the following placeholders substituted at deployment:
 | `{projectName}` | Project name (from `name` field or directory name) | `My Server` |
 | `{renderTime}` | Render execution timestamp (Asia/Taipei timezone) | `2025-01-15 14:30 CST` |
 
-Supported languages:
+Bundled BlueMap translation files:
 - English (`en.conf`)
 - Simplified Chinese (`zh-CN.conf`)
 - Traditional Chinese, Taiwan (`zh-TW.conf`)
 - Traditional Chinese, Hong Kong (`zh-HK.conf`)
+
+These files are sourced from BlueMap's own translations. Only the languages listed above are kept; all other unused language settings are removed.
 
 ## Adding a New Server
 
