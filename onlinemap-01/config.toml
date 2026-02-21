@@ -1,5 +1,5 @@
 # Pterodactyl server identifier (from panel URL or API)
-server_id = "your-server-id-here"
+server_id = "8e22b0c9"
 
 # World directories to extract from the backup
-worlds = ["world", "world_nether", "world_the_end"]
+worlds = ["world"]
