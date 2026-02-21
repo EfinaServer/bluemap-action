@@ -21,8 +21,8 @@ type DeployConfig struct {
 }
 
 // Deploy copies all embedded language files into targetDir, replacing
-// placeholders {toolVersion}, {projectName}, and {renderTime} with the
-// corresponding values from cfg.
+// placeholders {toolVersion}, {minecraftVersion}, {projectName}, and
+// {renderTime} with the corresponding values from cfg.
 func Deploy(targetDir string, cfg DeployConfig) error {
 	entries, err := fs.ReadDir(langFiles, "files")
 	if err != nil {
