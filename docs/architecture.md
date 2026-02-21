@@ -122,6 +122,8 @@ bluemap-action/
 - 掃描 `web/assets/index-*.js` 檔案
 - 將 `.prbm` 改寫為 `.prbm.gz`，`/textures.json` 改寫為 `/textures.json.gz`
 
+> Netlify 不支援 wildcard content-encoding rewrite，因此 JS bundle 必須直接參照已壓縮的檔案路徑，而非由伺服器動態協商。
+
 ### `internal/analyzer`
 
 世界檔案與輸出大小分析：

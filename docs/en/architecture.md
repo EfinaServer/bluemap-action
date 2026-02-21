@@ -124,6 +124,8 @@ Handles static asset compression reference rewriting:
 - Scans `web/assets/index-*.js` files
 - Rewrites `.prbm` to `.prbm.gz`, `/textures.json` to `/textures.json.gz`
 
+> Netlify does not support wildcard content-encoding rewrites, so the JavaScript bundle must reference compressed file paths directly rather than relying on server-side content negotiation.
+
 ### `internal/analyzer`
 
 World file and output size analysis:
