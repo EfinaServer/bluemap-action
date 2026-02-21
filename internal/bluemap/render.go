@@ -7,7 +7,7 @@ import (
 )
 
 // Render executes the BlueMap CLI jar in render mode.
-// It runs: java -jar <jarPath> -r
+// It runs: java -jar <jarPath> -v <mcVersion> -r
 // The working directory is set to serverDir so BlueMap picks up the config/ directory.
 // Stdout and stderr are streamed directly to the terminal so progress is visible.
 func Render(jarPath, serverDir, mcVersion string) error {
@@ -16,7 +16,7 @@ func Render(jarPath, serverDir, mcVersion string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	fmt.Printf("  executing: java -jar %s -r\n", jarPath)
+	fmt.Printf("  executing: java -jar %s -v %s -r\n", jarPath, mcVersion)
 	fmt.Printf("  working directory: %s\n", serverDir)
 	fmt.Println()
 
