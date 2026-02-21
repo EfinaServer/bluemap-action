@@ -12,6 +12,7 @@ import (
 type ServerConfig struct {
 	ServerID string   `toml:"server_id"`
 	Worlds   []string `toml:"worlds"`
+	Name     string   `toml:"name"`
 }
 
 // LoadedServer holds a parsed config along with its directory path.
