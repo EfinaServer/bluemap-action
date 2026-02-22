@@ -11,9 +11,10 @@ Guide for AI assistants working on **bluemap-action**.
 ```
 bluemap-action/
 ├── cmd/bluemap-action/
-│   └── main.go                  # CLI entry point (7-step pipeline)
+│   └── main.go                  # CLI entry point (8-step pipeline)
 ├── internal/
 │   ├── analyzer/analyzer.go     # World and web output size reporting
+│   ├── assets/assets.go         # Rewrites web asset references to compressed variants
 │   ├── bluemap/
 │   │   ├── download.go          # BlueMap CLI jar download from GitHub Releases
 │   │   └── render.go            # Executes BlueMap CLI via java -jar
@@ -58,7 +59,7 @@ The binary version is determined in this order:
 
 ## Execution Pipeline
 
-The tool runs a sequential 7-step pipeline (`cmd/bluemap-action/main.go`):
+The tool runs a sequential 8-step pipeline (`cmd/bluemap-action/main.go`):
 
 1. **Download & extract** — Fetch latest successful backup from Pterodactyl, extract world directories from tar.gz
 2. **Analyze worlds** — Report extracted world sizes (dimension breakdown for vanilla, per-folder for plugin)
@@ -66,7 +67,8 @@ The tool runs a sequential 7-step pipeline (`cmd/bluemap-action/main.go`):
 4. **Deploy language files** — Copy embedded `.conf` files to `web/lang/`, substituting placeholders
 5. **Deploy netlify.toml** — Write static site config (SPA redirect, gzip headers)
 6. **Render** — Execute `java -jar bluemap-cli.jar -v <mcVersion> -r`
-7. **Analyze output** — Report total `web/` directory size
+7. **Rewrite asset refs** — Rewrite `.prbm` → `.prbm.gz` and `/textures.json` → `/textures.json.gz` in the generated JS bundle so Netlify serves pre-compressed files directly
+8. **Analyze output** — Report total `web/` directory size
 
 ## Configuration
 

@@ -59,23 +59,23 @@ func fmtDuration(d time.Duration) string {
 
 // buildSummary collects data during the run for the GitHub Step Summary.
 type buildSummary struct {
-	toolVersion      string
-	projectName      string
-	serverID         string
-	serverType       string
-	worldName        string
-	worlds           []string
-	mcVersion        string
-	blueMapVersion   string
-	renderTime       string
-	backupName       string
-	backupUUID       string
-	backupSize       int64
-	downloadDur      time.Duration
-	renderDur        time.Duration
-	worldRows        []analyzer.WorldSummaryRow
-	worldTotal       int64
-	webOutputSize    int64
+	toolVersion    string
+	projectName    string
+	serverID       string
+	serverType     string
+	worldName      string
+	worlds         []string
+	mcVersion      string
+	blueMapVersion string
+	renderTime     string
+	backupName     string
+	backupUUID     string
+	backupSize     int64
+	downloadDur    time.Duration
+	renderDur      time.Duration
+	worldRows      []analyzer.WorldSummaryRow
+	worldTotal     int64
+	webOutputSize  int64
 }
 
 // writeGitHubSummary writes a Markdown summary to $GITHUB_STEP_SUMMARY when

@@ -15,12 +15,12 @@ const (
 
 // ServerConfig represents the TOML config for a single server directory.
 type ServerConfig struct {
-	ServerID       string `toml:"server_id"`
-	ServerType     string `toml:"server_type"`
-	WorldName      string `toml:"world_name"`
-	Name           string `toml:"name"`
+	ServerID         string `toml:"server_id"`
+	ServerType       string `toml:"server_type"`
+	WorldName        string `toml:"world_name"`
+	Name             string `toml:"name"`
 	MinecraftVersion string `toml:"mc_version"`
-	BlueMapVersion string `toml:"bluemap_version"`
+	BlueMapVersion   string `toml:"bluemap_version"`
 }
 
 // ResolveWorlds returns the list of world folder names to extract from the

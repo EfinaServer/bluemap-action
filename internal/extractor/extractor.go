@@ -3,6 +3,7 @@ package extractor
 import (
 	"archive/tar"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -51,7 +52,7 @@ func DownloadAndExtractWorlds(downloadURL, outputDir string, worlds []string) er
 
 	for {
 		header, err := tr.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -121,7 +122,14 @@ func writeFile(path string, r io.Reader, mode os.FileMode) error {
 	}
 	defer f.Close()
 
-	// Limit copy size to 10 GB as a safety measure.
-	_, err = io.Copy(f, io.LimitReader(r, 10<<30))
-	return err
+	// Limit copy size to 10 GB as a safety measure against malformed archives.
+	const limit = 10 << 30 // 10 GB
+	lr := &io.LimitedReader{R: r, N: limit}
+	if _, err = io.Copy(f, lr); err != nil {
+		return err
+	}
+	if lr.N == 0 {
+		return fmt.Errorf("file exceeds maximum allowed size of %d bytes", limit)
+	}
+	return nil
 }
