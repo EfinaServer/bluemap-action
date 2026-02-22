@@ -90,9 +90,9 @@ func DownloadAndExtractWorlds(downloadURL, outputDir string, worlds []string) er
 	// Verify all worlds were found.
 	for _, w := range worlds {
 		if extracted[w] == 0 {
-			fmt.Fprintf(os.Stderr, "warning: world %q was not found in the backup\n", w)
+			fmt.Fprintf(os.Stderr, "  ⚠️  world %q was not found in the backup\n", w)
 		} else {
-			fmt.Printf("  extracted %d files for world %q\n", extracted[w], w)
+			fmt.Printf("  ✔  extracted %d files for world %q\n", extracted[w], w)
 		}
 	}
 

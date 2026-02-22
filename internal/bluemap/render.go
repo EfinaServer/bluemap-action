@@ -17,7 +17,7 @@ func Render(jarPath, serverDir, mcVersion string) error {
 	cmd.Stderr = os.Stderr
 
 	fmt.Printf("  executing: java -jar %s -v %s -r\n", jarPath, mcVersion)
-	fmt.Printf("  working directory: %s\n", serverDir)
+	fmt.Printf("  working dir: %s\n", serverDir)
 	fmt.Println()
 
 	if err := cmd.Run(); err != nil {
@@ -25,6 +25,6 @@ func Render(jarPath, serverDir, mcVersion string) error {
 	}
 
 	fmt.Println()
-	fmt.Println("  BlueMap render completed successfully.")
+	fmt.Println("  ✔  BlueMap render completed.")
 	return nil
 }

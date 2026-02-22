@@ -9,6 +9,13 @@ import (
 	"github.com/EfinaServer/bluemap-action/internal/config"
 )
 
+// WorldSummaryRow is a single row for the GitHub Step Summary world table.
+type WorldSummaryRow struct {
+	Label string
+	Size  int64
+	Found bool
+}
+
 // DirSize calculates the total size of all files in a directory recursively.
 func DirSize(path string) (int64, error) {
 	var total int64
@@ -131,10 +138,12 @@ func AnalyzeVanillaWorld(serverDir, worldName string) (*DimensionReport, error) 
 }
 
 // PrintWorldAnalysis prints world size analysis to stdout based on server type.
-func PrintWorldAnalysis(serverType, serverDir string, worlds []string) int64 {
-	fmt.Println("  --- World Size Analysis ---")
+// It also returns a slice of rows for use in the GitHub Step Summary.
+func PrintWorldAnalysis(serverType, serverDir string, worlds []string) (int64, []WorldSummaryRow) {
+	fmt.Println("🌍  World Size Analysis")
 
 	var grandTotal int64
+	var rows []WorldSummaryRow
 
 	switch serverType {
 	case config.ServerTypeVanilla:
@@ -142,15 +151,19 @@ func PrintWorldAnalysis(serverType, serverDir string, worlds []string) int64 {
 			report, err := AnalyzeVanillaWorld(serverDir, w)
 			if err != nil {
 				fmt.Printf("    %-25s  (not found)\n", w)
+				rows = append(rows, WorldSummaryRow{Label: w + " (overworld)", Found: false})
 				continue
 			}
 
 			fmt.Printf("    %-25s  %s\n", report.Overworld.Name+" (overworld)", FormatSize(report.Overworld.Size))
+			rows = append(rows, WorldSummaryRow{Label: report.Overworld.Name + " (overworld)", Size: report.Overworld.Size, Found: true})
 			if report.Nether.Exists {
 				fmt.Printf("    %-25s  %s\n", report.Nether.Name+" (nether)", FormatSize(report.Nether.Size))
+				rows = append(rows, WorldSummaryRow{Label: report.Nether.Name + " (nether)", Size: report.Nether.Size, Found: true})
 			}
 			if report.End.Exists {
 				fmt.Printf("    %-25s  %s\n", report.End.Name+" (end)", FormatSize(report.End.Size))
+				rows = append(rows, WorldSummaryRow{Label: report.End.Name + " (end)", Size: report.End.Size, Found: true})
 			}
 			grandTotal += report.Total
 		}
@@ -160,17 +173,18 @@ func PrintWorldAnalysis(serverType, serverDir string, worlds []string) int64 {
 		for _, r := range reports {
 			if !r.Exists {
 				fmt.Printf("    %-25s  (not found)\n", r.Name)
+				rows = append(rows, WorldSummaryRow{Label: r.Name, Found: false})
 			} else {
 				fmt.Printf("    %-25s  %s\n", r.Name, FormatSize(r.Size))
+				rows = append(rows, WorldSummaryRow{Label: r.Name, Size: r.Size, Found: true})
 			}
 		}
 		grandTotal = total
 	}
 
 	fmt.Printf("    %-25s  %s\n", "TOTAL", FormatSize(grandTotal))
-	fmt.Println("  ---------------------------")
 
-	return grandTotal
+	return grandTotal, rows
 }
 
 // AnalyzeWebOutput reports the total size of the web output directory.
