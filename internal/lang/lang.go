@@ -14,10 +14,10 @@ var langFiles embed.FS
 
 // DeployConfig holds the values to substitute into language file placeholders.
 type DeployConfig struct {
-	ToolVersion string
+	ToolVersion      string
 	MinecraftVersion string
-	ProjectName string
-	RenderTime  string
+	ProjectName      string
+	RenderTime       string
 }
 
 // Deploy copies all embedded language files into targetDir, replacing

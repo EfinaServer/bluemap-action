@@ -28,13 +28,13 @@ func NewClient(panelURL, apiKey string) *Client {
 
 // Backup represents a single backup entry from the Pterodactyl API.
 type Backup struct {
-	UUID        string    `json:"uuid"`
-	Name        string    `json:"name"`
-	IsSuccessful bool    `json:"is_successful"`
-	IsLocked    bool      `json:"is_locked"`
-	Bytes       int64     `json:"bytes"`
-	CreatedAt   time.Time `json:"created_at"`
-	CompletedAt *time.Time `json:"completed_at"`
+	UUID         string     `json:"uuid"`
+	Name         string     `json:"name"`
+	IsSuccessful bool       `json:"is_successful"`
+	IsLocked     bool       `json:"is_locked"`
+	Bytes        int64      `json:"bytes"`
+	CreatedAt    time.Time  `json:"created_at"`
+	CompletedAt  *time.Time `json:"completed_at"`
 }
 
 type backupListResponse struct {

@@ -41,8 +41,15 @@ func rewriteFile(path string) error {
 	content := string(data)
 	original := content
 
+	// Protect already-compressed references before replacing, so that running
+	// the tool more than once on the same file is safe (idempotent).
+	content = strings.ReplaceAll(content, ".prbm.gz", "\x00prbm.gz")
 	content = strings.ReplaceAll(content, ".prbm", ".prbm.gz")
+	content = strings.ReplaceAll(content, "\x00prbm.gz", ".prbm.gz")
+
+	content = strings.ReplaceAll(content, "/textures.json.gz", "\x00textures.json.gz")
 	content = strings.ReplaceAll(content, "/textures.json", "/textures.json.gz")
+	content = strings.ReplaceAll(content, "\x00textures.json.gz", "/textures.json.gz")
 
 	if content == original {
 		fmt.Printf("    %s: no changes needed\n", filepath.Base(path))
