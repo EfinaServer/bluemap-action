@@ -172,8 +172,9 @@ Bundled BlueMap translation files:
 - Simplified Chinese (`zh-CN.conf`)
 - Traditional Chinese, Taiwan (`zh-TW.conf`)
 - Traditional Chinese, Hong Kong (`zh-HK.conf`)
+- Language settings (`settings.conf`) — Defines the default locale and available language list
 
-These files are sourced from BlueMap's own translations. Only the languages listed above are kept; all other unused language settings are removed.
+These files are sourced from BlueMap's own translations. Only the languages listed above are kept; all other unused language settings are removed. `settings.conf` sets the default language to English and enables automatic browser language detection.
 
 ## Adding a New Server
 

@@ -11,6 +11,7 @@ An automated Minecraft 3D map rendering and deployment tool. Downloads world bac
 - **Incremental Rendering** — Only re-renders changed chunks via caching
 - **Multi-Server Support** — Build maps for multiple servers in a single workflow file
 - **Bundled Translations** — Ships with BlueMap translation files, keeping only the required languages and removing unused language settings
+- **GitHub Step Summary** — Automatically generates a build summary in CI with server config, backup info, world sizes, and render duration
 
 ## Quick Start
 
@@ -86,6 +87,7 @@ jobs:
 | Name | Required | Default | Description |
 |---|---|---|---|
 | `server-directory` | **Yes** | — | Server directory containing `config.toml` |
+| `runs-on` | No | `ubuntu-latest` | Runner for the job (e.g. `ubuntu-latest`, `blacksmith-8vcpu-ubuntu-2404`) |
 | `bluemap-action-version` | No | `latest` | bluemap-action release tag (e.g. `v1.0.0`) |
 | `java-version` | No | `21` | Java version for BlueMap CLI rendering |
 | `deploy-to-netlify` | No | `true` | Whether to deploy to Netlify (set to `false` for render testing only) |
@@ -130,6 +132,7 @@ jobs:
   build:
     uses: EfinaServer/bluemap-action/.github/workflows/build-map.yml@main
     with:
+      runs-on: blacksmith-8vcpu-ubuntu-2404
       server-directory: onlinemap-01
       bluemap-action-version: v1.0.0
       java-version: "21"
