@@ -7,6 +7,7 @@ jobs:
   test-build-map:
     uses: ./.github/workflows/build-map.yml
     with:
+      runs-on: blacksmith-8vcpu-ubuntu-2404
       server-directory: test/test-onlinemap
       netlify-site-id: 0e027990-adef-4b7f-99e1-957d387a9128
       deploy-to-netlify: true

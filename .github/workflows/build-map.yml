@@ -3,6 +3,11 @@ name: Build Online Map
 on:
   workflow_call:
     inputs:
+      runs-on:
+        description: "Runner to use for the job (e.g. ubuntu-latest, blacksmith-8vcpu-ubuntu-2404)"
+        required: false
+        type: string
+        default: "ubuntu-latest"
       server-directory:
         description: "Server directory containing config.toml (e.g. onlinemap-01)"
         required: true
@@ -39,7 +44,7 @@ on:
 
 jobs:
   build-map:
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: ${{ inputs.runs-on }}
     steps:
       - name: Checkout caller repository
         uses: actions/checkout@v6
