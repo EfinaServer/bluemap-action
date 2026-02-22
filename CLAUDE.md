@@ -22,7 +22,7 @@ bluemap-action/
 │   ├── extractor/extractor.go   # tar.gz backup download and world extraction
 │   ├── lang/
 │   │   ├── lang.go              # Embedded language file deployment
-│   │   └── files/               # Embedded .conf language files (en, zh-CN, zh-TW, zh-HK)
+│   │   └── files/               # Embedded .conf language files (en, settings, zh-CN, zh-TW, zh-HK)
 │   ├── netlify/deploy.go        # Generates netlify.toml for static hosting
 │   └── pterodactyl/client.go    # Pterodactyl panel Client API integration
 ├── onlinemap-01/                # Example server configuration
