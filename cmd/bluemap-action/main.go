@@ -72,6 +72,7 @@ type buildSummary struct {
 	backupUUID       string
 	backupSize       int64
 	downloadDur      time.Duration
+	renderDur        time.Duration
 	worldRows        []analyzer.WorldSummaryRow
 	worldTotal       int64
 	webOutputSize    int64
@@ -117,6 +118,13 @@ func writeGitHubSummary(sum *buildSummary) {
 	sb.WriteString(fmt.Sprintf("| **UUID** | `%s` |\n", sum.backupUUID))
 	sb.WriteString(fmt.Sprintf("| **Size** | %s |\n", analyzer.FormatSize(sum.backupSize)))
 	sb.WriteString(fmt.Sprintf("| **Download + Extraction** | %s |\n", fmtDuration(sum.downloadDur)))
+	sb.WriteString("\n")
+
+	// Render section.
+	sb.WriteString("### 🔨 Render\n\n")
+	sb.WriteString("| Property | Value |\n")
+	sb.WriteString("|:---|---:|\n")
+	sb.WriteString(fmt.Sprintf("| **BlueMap CLI Duration** | %s |\n", fmtDuration(sum.renderDur)))
 	sb.WriteString("\n")
 
 	// World sizes section.
@@ -267,9 +275,12 @@ func main() {
 
 	// Step 6: Execute BlueMap CLI rendering.
 	fmt.Printf("\n🔨  Running BlueMap CLI render...\n")
-	if err := bluemap.Render(jarPath, srv.Dir, srv.Config.MinecraftVersion); err != nil {
+	renderDur, err := bluemap.Render(jarPath, srv.Dir, srv.Config.MinecraftVersion)
+	if err != nil {
 		log.Fatalf("💥  error during rendering: %v", err)
 	}
+	sum.renderDur = renderDur
+	fmt.Printf("⏱   Render took %s\n", fmtDuration(renderDur))
 
 	// Step 7: Rewrite asset references to compressed variants.
 	fmt.Printf("\n✏️   Rewriting asset references to compressed variants...\n")
