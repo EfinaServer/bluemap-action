@@ -66,6 +66,18 @@ bluemap-action/
 └─────────────────────────────────────────────────────────┘
 ```
 
+### GitHub Step Summary
+
+在 CI 環境中（`CI=true`），管線結束時會將建置摘要寫入 `$GITHUB_STEP_SUMMARY`，產生 Markdown 格式的報告，包含：
+
+- **伺服器設定** — 專案名稱、伺服器 ID、類型、世界名稱、Minecraft 版本、BlueMap 版本、渲染時間
+- **備份資訊** — 備份名稱、UUID、檔案大小、下載與擷取所需時間
+- **渲染** — BlueMap CLI 渲染所需時間
+- **世界大小** — 各維度/世界的檔案大小明細
+- **Web 輸出** — `web/` 目錄總大小
+
+在非 CI 環境中，此步驟會自動略過。
+
 ## 各模組說明
 
 ### `internal/pterodactyl`

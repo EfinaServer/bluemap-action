@@ -68,6 +68,18 @@ bluemap-action/
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+### GitHub Step Summary
+
+When running in a CI environment (`CI=true`), the pipeline writes a build summary to `$GITHUB_STEP_SUMMARY` at the end of execution, producing a Markdown report that includes:
+
+- **Server Configuration** — Project name, server ID, type, world name, Minecraft version, BlueMap version, render timestamp
+- **Backup** — Backup name, UUID, file size, download and extraction duration
+- **Render** — BlueMap CLI render duration
+- **World Sizes** — Size breakdown by dimension/world folder
+- **Web Output** — Total `web/` directory size
+
+This step is automatically skipped when not running in CI.
+
 ## Module Reference
 
 ### `internal/pterodactyl`

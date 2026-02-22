@@ -11,6 +11,7 @@ An automated Minecraft 3D map rendering and deployment tool. Downloads world bac
 - **Incremental Rendering** — Only re-renders changed chunks via caching
 - **Multi-Server Support** — Build maps for multiple servers in a single workflow file
 - **Bundled Translations** — Ships with BlueMap translation files, keeping only the required languages and removing unused language settings
+- **GitHub Step Summary** — Automatically generates a build summary in CI with server config, backup info, world sizes, and render duration
 
 ## Quick Start
 
