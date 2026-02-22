@@ -78,11 +78,16 @@ type buildSummary struct {
 	webOutputSize    int64
 }
 
-// writeGitHubSummary writes a Markdown summary to $GITHUB_STEP_SUMMARY when running
-// inside GitHub Actions. It is a no-op when the environment variable is not set.
+// writeGitHubSummary writes a Markdown summary to $GITHUB_STEP_SUMMARY when
+// running inside a CI environment (CI=true). It is a no-op otherwise.
 func writeGitHubSummary(sum *buildSummary) {
+	if os.Getenv("CI") != "true" {
+		return
+	}
+
 	summaryPath := os.Getenv("GITHUB_STEP_SUMMARY")
 	if summaryPath == "" {
+		fmt.Fprintln(os.Stderr, "⚠️  CI=true but GITHUB_STEP_SUMMARY is not set; skipping summary")
 		return
 	}
 
