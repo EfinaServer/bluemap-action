@@ -59,8 +59,18 @@ func DownloadAndExtractWorlds(downloadURL, outputDir string, worlds []string) er
 			return fmt.Errorf("parallel download: %w", err)
 		}
 	} else {
-		if contentLength > 0 {
-			fmt.Printf("  → downloading %s\n", formatBytes(contentLength))
+		// Log why we are falling back to a single connection.
+		if !rangeOK {
+			if contentLength > 0 {
+				fmt.Printf("  → single-connection download (%s, server does not support Range requests)\n",
+					formatBytes(contentLength))
+			} else {
+				fmt.Printf("  → single-connection download (size unknown, server does not support Range requests)\n")
+			}
+		} else {
+			// rangeOK but file is below the parallel threshold.
+			fmt.Printf("  → single-connection download (%s, below %s parallel threshold)\n",
+				formatBytes(contentLength), formatBytes(minParallelSize))
 		}
 		if err := downloadSingle(downloadURL, tmpFile); err != nil {
 			tmpFile.Close()
