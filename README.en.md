@@ -42,6 +42,7 @@ world_name      = "world"        # World folder name
 mc_version      = "1.21.11"      # Minecraft version
 bluemap_version = "5.16"         # BlueMap CLI version
 name            = "My Server"    # Display name (optional)
+# download_mode = "auto"         # Download mode (optional): "auto" | "parallel" | "single"
 ```
 
 > See [docs/en/configuration.md](docs/en/configuration.md) for full configuration reference.

@@ -28,19 +28,81 @@ const (
 // DownloadAndExtractWorlds downloads a backup from the given URL and extracts
 // only the specified world directories into outputDir.
 //
-// When the server advertises Accept-Ranges: bytes and a known Content-Length,
-// the download is split across multiple parallel connections for higher
-// throughput. Otherwise it falls back to a single streaming connection.
+// mode selects the download strategy:
+//   - "auto"     — probe the server; use parallel if it supports Range requests
+//     and the file is ≥ 64 MB, otherwise stream directly (no temp file).
+//   - "parallel" — force 4-connection parallel download; returns an error if
+//     the server does not advertise Accept-Ranges: bytes or Content-Length.
+//   - "single"   — force a single HTTP connection and stream the response body
+//     directly into the tar reader without writing a temp file to disk.
 //
 // The backup is expected to be a tar.gz archive. World folders are matched by
 // checking if a tar entry path starts with one of the world names (e.g.
 // "world/", "world_nether/").
-func DownloadAndExtractWorlds(downloadURL, outputDir string, worlds []string) error {
+func DownloadAndExtractWorlds(downloadURL, outputDir string, worlds []string, mode string) error {
+	switch mode {
+	case "parallel":
+		return downloadParallelExtract(downloadURL, outputDir, worlds)
+	case "single":
+		fmt.Println("  → single-connection download (streaming, forced)")
+		return downloadStreamExtract(downloadURL, outputDir, worlds)
+	default: // "auto"
+		return downloadAutoExtract(downloadURL, outputDir, worlds)
+	}
+}
+
+// downloadAutoExtract probes the server and chooses the best strategy:
+// parallel (temp file) when Range is supported and size ≥ 64 MB, otherwise
+// a single streaming connection (no temp file).
+func downloadAutoExtract(downloadURL, outputDir string, worlds []string) error {
 	contentLength, rangeOK, err := probeDownload(downloadURL)
 	if err != nil {
 		return fmt.Errorf("probing download URL: %w", err)
 	}
 
+	if rangeOK && contentLength >= minParallelSize {
+		fmt.Printf("  → parallel download (%d connections, %s)\n",
+			downloadWorkers, formatBytes(contentLength))
+		return parallelDownloadAndExtract(downloadURL, outputDir, worlds, contentLength, downloadWorkers)
+	}
+
+	// Log why we are falling back to a single connection.
+	if !rangeOK {
+		if contentLength > 0 {
+			fmt.Printf("  → single-connection download (%s, server does not support Range requests)\n",
+				formatBytes(contentLength))
+		} else {
+			fmt.Println("  → single-connection download (size unknown, server does not support Range requests)")
+		}
+	} else {
+		// rangeOK but file is below the parallel threshold.
+		fmt.Printf("  → single-connection download (%s, below %s parallel threshold)\n",
+			formatBytes(contentLength), formatBytes(minParallelSize))
+	}
+	return downloadStreamExtract(downloadURL, outputDir, worlds)
+}
+
+// downloadParallelExtract forces parallel download. It probes the server first
+// and returns an error if Range requests or Content-Length are not available.
+func downloadParallelExtract(downloadURL, outputDir string, worlds []string) error {
+	contentLength, rangeOK, err := probeDownload(downloadURL)
+	if err != nil {
+		return fmt.Errorf("probing download URL: %w", err)
+	}
+	if !rangeOK {
+		return fmt.Errorf("server does not support HTTP Range requests; cannot use parallel download mode")
+	}
+	if contentLength <= 0 {
+		return fmt.Errorf("server did not return Content-Length; cannot use parallel download mode")
+	}
+	fmt.Printf("  → parallel download (%d connections, %s, forced)\n",
+		downloadWorkers, formatBytes(contentLength))
+	return parallelDownloadAndExtract(downloadURL, outputDir, worlds, contentLength, downloadWorkers)
+}
+
+// parallelDownloadAndExtract downloads the file in parallel into a temp file,
+// then extracts worlds from it. The temp file is removed on return.
+func parallelDownloadAndExtract(downloadURL, outputDir string, worlds []string, contentLength int64, numWorkers int) error {
 	// Create a temp file in outputDir for the downloaded archive.
 	// Using the same filesystem avoids cross-device rename issues and keeps
 	// disk usage predictable.
@@ -51,38 +113,15 @@ func DownloadAndExtractWorlds(downloadURL, outputDir string, worlds []string) er
 	tmpPath := tmpFile.Name()
 	defer os.Remove(tmpPath)
 
-	if rangeOK && contentLength >= minParallelSize {
-		fmt.Printf("  → parallel download (%d connections, %s)\n",
-			downloadWorkers, formatBytes(contentLength))
-		if err := downloadParallel(downloadURL, tmpFile, contentLength, downloadWorkers); err != nil {
-			tmpFile.Close()
-			return fmt.Errorf("parallel download: %w", err)
-		}
-	} else {
-		// Log why we are falling back to a single connection.
-		if !rangeOK {
-			if contentLength > 0 {
-				fmt.Printf("  → single-connection download (%s, server does not support Range requests)\n",
-					formatBytes(contentLength))
-			} else {
-				fmt.Printf("  → single-connection download (size unknown, server does not support Range requests)\n")
-			}
-		} else {
-			// rangeOK but file is below the parallel threshold.
-			fmt.Printf("  → single-connection download (%s, below %s parallel threshold)\n",
-				formatBytes(contentLength), formatBytes(minParallelSize))
-		}
-		if err := downloadSingle(downloadURL, tmpFile); err != nil {
-			tmpFile.Close()
-			return fmt.Errorf("downloading backup: %w", err)
-		}
+	if err := downloadParallel(downloadURL, tmpFile, contentLength, numWorkers); err != nil {
+		tmpFile.Close()
+		return fmt.Errorf("parallel download: %w", err)
 	}
-
 	if err := tmpFile.Close(); err != nil {
 		return fmt.Errorf("closing temp file: %w", err)
 	}
 
-	// Re-open the temp file for extraction.
+	// Re-open the temp file for sequential extraction.
 	f, err := os.Open(tmpPath)
 	if err != nil {
 		return fmt.Errorf("opening downloaded archive: %w", err)
@@ -90,6 +129,25 @@ func DownloadAndExtractWorlds(downloadURL, outputDir string, worlds []string) er
 	defer f.Close()
 
 	return extractWorlds(f, outputDir, worlds)
+}
+
+// downloadStreamExtract downloads via a single HTTP connection and pipes the
+// response body directly into the tar reader — no temp file is written to disk.
+func downloadStreamExtract(downloadURL, outputDir string, worlds []string) error {
+	client := &http.Client{Timeout: 30 * time.Minute}
+
+	resp, err := client.Get(downloadURL)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("download returned status %d", resp.StatusCode)
+	}
+
+	const limit = 10 << 30 // 10 GB safety cap
+	return extractWorlds(io.LimitReader(resp.Body, limit), outputDir, worlds)
 }
 
 // probeDownload sends a HEAD request to discover the content length and whether
@@ -221,26 +279,6 @@ func downloadChunk(client *http.Client, url string, f *os.File, start, end int64
 		}
 	}
 	return nil
-}
-
-// downloadSingle downloads url to f using a single connection (fallback for
-// servers that do not support Range requests).
-func downloadSingle(url string, f *os.File) error {
-	client := &http.Client{Timeout: 30 * time.Minute}
-
-	resp, err := client.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("download returned status %d", resp.StatusCode)
-	}
-
-	const limit = 10 << 30 // 10 GB safety cap
-	_, err = io.Copy(f, io.LimitReader(resp.Body, limit))
-	return err
 }
 
 // extractWorlds reads a tar.gz archive from r and extracts only the world

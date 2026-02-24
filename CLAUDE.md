@@ -81,6 +81,7 @@ world_name      = "world"        # Base world folder name
 mc_version      = "1.21.11"      # Minecraft version for rendering
 bluemap_version = "5.16"         # BlueMap CLI version to download
 name            = "My Server"    # Optional display name (defaults to directory name)
+# download_mode = "auto"         # Optional: "auto" (default) | "parallel" | "single"
 ```
 
 ### Server types
@@ -99,8 +100,8 @@ name            = "My Server"    # Optional display name (defaults to directory 
 
 - **Single dependency** — Only `github.com/BurntSushi/toml` for config parsing. Everything else uses the Go standard library.
 - **Embedded language files** — Language `.conf` files are compiled into the binary via `//go:embed`. Placeholders (`{toolVersion}`, `{minecraftVersion}`, `{projectName}`, `{renderTime}`) are substituted at runtime.
-- **Parallel download** — When the server advertises `Accept-Ranges: bytes` and the backup is ≥ 64 MB, the download is split across 4 parallel HTTP Range connections for higher throughput. Falls back to a single connection otherwise. The log line indicates which mode was chosen and the reason.
-- **Temp-file extraction** — Backups are downloaded to a temporary `.backup-*.tar.gz` file (same filesystem as the output directory to avoid cross-device rename issues), then the file is re-opened for streaming tar.gz extraction. Extraction is filtered to only matching world directories.
+- **Three download modes** — Controlled by `download_mode` in `config.toml` (`auto` / `parallel` / `single`). In `auto` mode the server is probed: if it advertises `Accept-Ranges: bytes` and the backup is ≥ 64 MB, 4 parallel HTTP Range connections are used (temp file required); otherwise the response body is streamed directly into the tar reader (no temp file). `parallel` forces multi-connection and errors if Range or Content-Length is absent. `single` forces streaming. The log line always states which mode was chosen and the reason.
+- **Temp-file extraction (parallel only)** — Parallel download pre-allocates a temporary `.backup-*.tar.gz` file (same filesystem as the output directory to avoid cross-device rename issues), each worker writes its chunk via `WriteAt`, then the file is re-opened for sequential tar.gz extraction. The temp file is removed on completion.
 - **Path traversal protection** — The extractor validates that all extracted paths stay within the output directory.
 - **Atomic file writes** — BlueMap CLI jar downloads use a `.tmp` file with rename to prevent partial files.
 - **Timezone** — Render timestamps use `Asia/Taipei` timezone.

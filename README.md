@@ -42,6 +42,7 @@ world_name      = "world"        # 世界資料夾名稱
 mc_version      = "1.21.11"      # Minecraft 版本
 bluemap_version = "5.16"         # BlueMap CLI 版本
 name            = "My Server"    # 顯示名稱（選填）
+# download_mode = "auto"         # 下載模式（選填）："auto" | "parallel" | "single"
 ```
 
 > 完整設定說明見 [docs/configuration.md](docs/configuration.md)。
