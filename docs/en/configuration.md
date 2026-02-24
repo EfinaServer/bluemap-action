@@ -26,6 +26,12 @@ bluemap_version = "5.16"
 
 # Display name (optional, defaults to directory name)
 name = "My Server"
+
+# Download mode (optional, defaults to "auto")
+# "auto"     — auto-detect: use parallel if server supports Range and file ≥ 64 MB, else stream
+# "parallel" — force multi-connection (requires Range request support and Content-Length)
+# "single"   — force single-connection streaming (no temp file written to disk)
+# download_mode = "auto"
 ```
 
 ### Field Reference
@@ -38,6 +44,21 @@ name = "My Server"
 | `mc_version` | **Yes** | Minecraft version number, required by BlueMap CLI for correct rendering |
 | `bluemap_version` | **Yes** | BlueMap CLI version to download and use |
 | `name` | No | Project display name, shown in the language file footer |
+| `download_mode` | No | Backup download strategy: `"auto"` (default), `"parallel"`, or `"single"` (see below) |
+
+### Download Mode
+
+`download_mode` controls the backup download strategy:
+
+| Mode | Description |
+|---|---|
+| `auto` (default) | Auto-detect: sends a HEAD request to probe the server. Uses 4 parallel connections if the server advertises `Accept-Ranges: bytes` and the file is ≥ 64 MB; otherwise falls back to single-connection streaming (no temp file). |
+| `parallel` | Force 4-connection parallel download. Returns an error if the server does not support Range requests or does not return `Content-Length`. |
+| `single` | Force single-connection streaming — pipes the HTTP response body directly into the tar reader with **no temp file written to disk**. |
+
+> **When to use `parallel`?** When the backup is large and you know the server supports Range requests, this forces multi-connection regardless of the auto threshold.
+>
+> **When to use `single`?** When disk space is limited or you want the lowest possible disk I/O — streaming mode bypasses the temp file entirely.
 
 ### Server Types
 

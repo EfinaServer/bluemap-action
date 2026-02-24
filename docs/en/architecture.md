@@ -92,9 +92,13 @@ Encapsulates Pterodactyl panel Client API interactions:
 
 ### `internal/extractor`
 
-Handles backup file download and decompression:
+Handles backup file download and decompression. Supports three download modes controlled by `download_mode` in `config.toml`:
 
-- Streams directly from HTTP response to tar reader (no temp file on disk)
+- **`auto` (default)** — probes the server and chooses automatically: uses 4 parallel connections (temp file required) when `Accept-Ranges: bytes` is advertised and size ≥ 64 MB; otherwise falls back to single-connection streaming (no temp file)
+- **`parallel`** — forces 4-connection parallel download; returns an error if the server does not support Range requests or does not return `Content-Length`
+- **`single`** — forces single-connection streaming, piping the HTTP response directly into the tar reader with no temp file written to disk
+
+Common features:
 - Filters extraction by world names, extracting only matching directories
 - Includes path traversal protection, ensuring all extracted paths stay within the output directory
 - Per-file size limit: 10 GB
@@ -153,9 +157,15 @@ World file and output size analysis:
 
 The project depends only on `github.com/BurntSushi/toml` for config parsing. Everything else uses the Go standard library. This reduces supply chain risk and simplifies the build process.
 
-### Streaming Extraction
+### Three Download Modes
 
-Backup files are streamed directly from the HTTP response to a tar reader for decompression — the complete tar.gz is never written to disk. This reduces disk space requirements and is especially suitable for CI environments.
+The backup download strategy is configured via `download_mode` in `config.toml`:
+
+- **`auto` (default)** — probes the server and selects the best strategy automatically
+- **`parallel`** — forces 4-connection parallel download (best for large backups)
+- **`single`** — forces streaming with no temp file (lowest disk I/O)
+
+Parallel download requires a temp file on the same filesystem as the output directory (to avoid cross-device rename issues); each worker writes to its byte offset via `WriteAt`, then the file is re-opened for sequential extraction. Single/streaming mode pipes the HTTP response body directly into the tar reader and never touches the local disk for the archive.
 
 ### Embedded Language Files
 

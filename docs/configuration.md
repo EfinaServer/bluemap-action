@@ -26,6 +26,12 @@ bluemap_version = "5.16"
 
 # 顯示名稱（選填，預設為目錄名稱）
 name = "My Server"
+
+# 下載模式（選填，預設為 "auto"）
+# "auto"     — 自動偵測：伺服器支援 Range 且檔案 ≥ 64 MB 時用多線程，否則串流單線程
+# "parallel" — 強制多線程（需要伺服器支援 Range 請求與 Content-Length）
+# "single"   — 強制單線程串流（不寫入暫存檔案）
+# download_mode = "auto"
 ```
 
 ### 欄位說明
@@ -38,6 +44,21 @@ name = "My Server"
 | `mc_version` | **是** | Minecraft 版本號，BlueMap CLI 需要此資訊來正確渲染 |
 | `bluemap_version` | **是** | 要下載使用的 BlueMap CLI 版本 |
 | `name` | 否 | 專案顯示名稱，會出現在語言檔案的頁尾資訊中 |
+| `download_mode` | 否 | 備份下載模式：`"auto"`（預設）、`"parallel"` 或 `"single"`（見下方說明） |
+
+### 下載模式
+
+`download_mode` 控制備份檔案的下載策略：
+
+| 模式 | 說明 |
+|---|---|
+| `auto`（預設） | 自動偵測：先送出 HEAD 請求探測伺服器，若支援 `Accept-Ranges: bytes` 且檔案 ≥ 64 MB 則使用 4 個連線平行下載；否則退回單線程串流（不寫入暫存檔案） |
+| `parallel` | 強制使用 4 個連線平行下載。若伺服器不支援 Range 請求或未回傳 `Content-Length`，則工具會報錯並終止 |
+| `single` | 強制使用單線程串流，將 HTTP 回應直接導入 tar reader，**不寫入任何暫存檔案**到磁碟 |
+
+> **何時使用 `parallel`？** 備份超過 64 MB 且你知道伺服器支援 Range 請求時，可強制使用以確保多線程下載。
+>
+> **何時使用 `single`？** 磁碟空間有限或需要最低磁碟 I/O 時，使用串流模式完全跳過暫存檔案。
 
 ### 伺服器類型
 

@@ -11,6 +11,11 @@ import (
 const (
 	ServerTypeVanilla = "vanilla"
 	ServerTypePlugin  = "plugin"
+
+	// DownloadMode constants control how the backup is downloaded.
+	DownloadModeAuto     = "auto"     // Probe the server and choose the best mode.
+	DownloadModeParallel = "parallel" // Force parallel multi-connection download.
+	DownloadModeSingle   = "single"   // Force single-connection streaming download.
 )
 
 // ServerConfig represents the TOML config for a single server directory.
@@ -21,6 +26,16 @@ type ServerConfig struct {
 	Name             string `toml:"name"`
 	MinecraftVersion string `toml:"mc_version"`
 	BlueMapVersion   string `toml:"bluemap_version"`
+	DownloadMode     string `toml:"download_mode"` // "auto" (default) | "parallel" | "single"
+}
+
+// ResolveDownloadMode returns the effective download mode, defaulting to
+// DownloadModeAuto when the field is not set in config.toml.
+func (c *ServerConfig) ResolveDownloadMode() string {
+	if c.DownloadMode == "" {
+		return DownloadModeAuto
+	}
+	return c.DownloadMode
 }
 
 // ResolveWorlds returns the list of world folder names to extract from the
@@ -83,6 +98,14 @@ func Load(dir string) (LoadedServer, error) {
 	}
 	if cfg.BlueMapVersion == "" {
 		return LoadedServer{}, fmt.Errorf("%s: bluemap_version is required", configPath)
+	}
+	if cfg.DownloadMode != "" &&
+		cfg.DownloadMode != DownloadModeAuto &&
+		cfg.DownloadMode != DownloadModeParallel &&
+		cfg.DownloadMode != DownloadModeSingle {
+		return LoadedServer{}, fmt.Errorf(
+			"%s: download_mode must be %q, %q, or %q, got %q",
+			configPath, DownloadModeAuto, DownloadModeParallel, DownloadModeSingle, cfg.DownloadMode)
 	}
 
 	absDir, err := filepath.Abs(dir)
