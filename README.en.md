@@ -88,7 +88,8 @@ jobs:
 | Name | Required | Default | Description |
 |---|---|---|---|
 | `server-directory` | **Yes** | — | Server directory containing `config.toml` |
-| `runs-on` | No | `ubuntu-latest` | Runner for the job (e.g. `ubuntu-latest`, `blacksmith-8vcpu-ubuntu-2404`) |
+| `runs-on-cache-hit` | No | `blacksmith-2vcpu-ubuntu-2404` | Runner when cache exists (smaller machine for incremental render) |
+| `runs-on-cache-miss` | No | `blacksmith-8vcpu-ubuntu-2404` | Runner when no cache (larger machine for full render) |
 | `bluemap-action-version` | No | `latest` | bluemap-action release tag (e.g. `v1.0.0`) |
 | `java-version` | No | `21` | Java version for BlueMap CLI rendering |
 | `deploy-to-netlify` | No | `true` | Whether to deploy to Netlify (set to `false` for render testing only) |
@@ -133,7 +134,8 @@ jobs:
   build:
     uses: EfinaServer/bluemap-action/.github/workflows/build-map.yml@main
     with:
-      runs-on: blacksmith-8vcpu-ubuntu-2404
+      runs-on-cache-hit: blacksmith-2vcpu-ubuntu-2404
+      runs-on-cache-miss: blacksmith-8vcpu-ubuntu-2404
       server-directory: onlinemap-01
       bluemap-action-version: v1.0.0
       java-version: "21"

@@ -88,7 +88,8 @@ jobs:
 | 名稱 | 必填 | 預設值 | 說明 |
 |---|---|---|---|
 | `server-directory` | **是** | — | 包含 `config.toml` 的伺服器目錄名稱 |
-| `runs-on` | 否 | `ubuntu-latest` | 執行 job 的 runner（例如 `ubuntu-latest`、`blacksmith-8vcpu-ubuntu-2404`） |
+| `runs-on-cache-hit` | 否 | `blacksmith-2vcpu-ubuntu-2404` | 有快取時使用的 runner（增量渲染，較小機器） |
+| `runs-on-cache-miss` | 否 | `blacksmith-8vcpu-ubuntu-2404` | 無快取時使用的 runner（完整渲染，較大機器） |
 | `bluemap-action-version` | 否 | `latest` | bluemap-action 的 release tag（例如 `v1.0.0`） |
 | `java-version` | 否 | `21` | 用於 BlueMap CLI 渲染的 Java 版本 |
 | `deploy-to-netlify` | 否 | `true` | 是否部署至 Netlify（設為 `false` 僅供測試渲染用） |
@@ -133,7 +134,8 @@ jobs:
   build:
     uses: EfinaServer/bluemap-action/.github/workflows/build-map.yml@main
     with:
-      runs-on: blacksmith-8vcpu-ubuntu-2404
+      runs-on-cache-hit: blacksmith-2vcpu-ubuntu-2404
+      runs-on-cache-miss: blacksmith-8vcpu-ubuntu-2404
       server-directory: onlinemap-01
       bluemap-action-version: v1.0.0
       java-version: "21"
