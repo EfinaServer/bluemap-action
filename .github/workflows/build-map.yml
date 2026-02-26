@@ -3,11 +3,16 @@ name: Build Online Map
 on:
   workflow_call:
     inputs:
-      runs-on:
-        description: "Runner to use for the job (e.g. ubuntu-latest, blacksmith-8vcpu-ubuntu-2404)"
+      runs-on-cache-hit:
+        description: "Runner when cache exists (smaller machine for incremental render)"
         required: false
         type: string
-        default: "ubuntu-latest"
+        default: "blacksmith-2vcpu-ubuntu-2404"
+      runs-on-cache-miss:
+        description: "Runner when no cache (larger machine for full render)"
+        required: false
+        type: string
+        default: "blacksmith-8vcpu-ubuntu-2404"
       server-directory:
         description: "Server directory containing config.toml (e.g. onlinemap-01)"
         required: true
@@ -43,8 +48,33 @@ on:
         required: false
 
 jobs:
+  check-cache:
+    runs-on: ubuntu-latest
+    outputs:
+      runner: ${{ steps.select-runner.outputs.runner }}
+    steps:
+      - name: Check web/maps cache
+        id: cache-check
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ inputs.server-directory }}/web/maps
+          key: bluemap-maps-${{ inputs.server-directory }}-
+          lookup-only: true
+
+      - name: Select runner
+        id: select-runner
+        run: |
+          if [ "${{ steps.cache-check.outputs.cache-hit }}" = "true" ]; then
+            echo "Cache found — using smaller runner"
+            echo "runner=${{ inputs.runs-on-cache-hit }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "No cache — using larger runner"
+            echo "runner=${{ inputs.runs-on-cache-miss }}" >> "$GITHUB_OUTPUT"
+          fi
+
   build-map:
-    runs-on: ${{ inputs.runs-on }}
+    needs: check-cache
+    runs-on: ${{ needs.check-cache.outputs.runner }}
     steps:
       - name: Checkout caller repository
         uses: actions/checkout@v6
