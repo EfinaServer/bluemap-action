@@ -15,7 +15,8 @@ bluemap-action/
 │   ├── assets/assets.go         # 靜態資源壓縮參照改寫
 │   ├── bluemap/
 │   │   ├── download.go          # 從 GitHub Releases 下載 BlueMap CLI jar
-│   │   └── render.go            # 透過 java -jar 執行 BlueMap CLI 渲染
+│   │   ├── render.go            # 透過 java -jar 執行 BlueMap CLI 渲染
+│   │   └── scripts.go           # 執行 scripts/ 目錄中的自訂腳本
 │   ├── config/config.go         # TOML 設定檔解析與驗證
 │   ├── extractor/extractor.go   # tar.gz 備份下載與世界目錄擷取
 │   ├── lang/
@@ -36,30 +37,31 @@ bluemap-action/
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ 1. 載入設定                                               │
-│    讀取 config.toml，驗證必填欄位                           │
-├─────────────────────────────────────────────────────────┤
-│ 2. 下載並擷取世界檔案                                       │
+│ 1. 下載並擷取世界檔案                                       │
 │    從 Pterodactyl 取得最新成功備份 → 串流解壓 tar.gz          │
 │    → 僅擷取對應的世界目錄                                    │
 ├─────────────────────────────────────────────────────────┤
-│ 3. 分析世界大小                                            │
+│ 2. 分析世界大小                                            │
 │    報告擷取的世界大小（vanilla: 維度細分 / plugin: 各資料夾）   │
 ├─────────────────────────────────────────────────────────┤
-│ 4. 下載 BlueMap CLI                                       │
+│ 3. 下載 BlueMap CLI                                       │
 │    從 GitHub Releases 取得 jar（若已快取則跳過）              │
 ├─────────────────────────────────────────────────────────┤
-│ 5. 部署語言檔案                                            │
+│ 4. 部署語言檔案                                            │
 │    複製嵌入的 .conf 到 web/lang/，替換佔位符                 │
 ├─────────────────────────────────────────────────────────┤
-│ 6. 部署 netlify.toml                                      │
+│ 5. 部署 netlify.toml                                      │
 │    寫入靜態網站設定（SPA 重導、gzip 標頭）                    │
+├─────────────────────────────────────────────────────────┤
+│ 6. 執行自訂腳本                                            │
+│    依字母順序執行 scripts/ 中的 .py 與 .sh 腳本              │
+│    （若 scripts/ 目錄不存在則自動略過）                       │
 ├─────────────────────────────────────────────────────────┤
 │ 7. 渲染                                                   │
 │    執行 java -jar bluemap-cli.jar -v <mcVersion> -r       │
 ├─────────────────────────────────────────────────────────┤
 │ 8. 改寫資源參照                                            │
-│    將 .prbm → .prbm.gz、.json → .json.gz                 │
+│    .prbm → .prbm.gz、/textures.json → /textures.json.gz  │
 ├─────────────────────────────────────────────────────────┤
 │ 9. 分析輸出                                               │
 │    報告 web/ 目錄總大小                                     │
@@ -92,8 +94,8 @@ bluemap-action/
 
 處理備份檔案的下載與解壓，支援三種下載模式（由 `config.toml` 的 `download_mode` 控制）：
 
-- **`auto`（預設）** — 以 `GET Range: bytes=0-0` 請求探測伺服器後自動選擇：伺服器回應 `206 Partial Content` 且 ≥ 64 MB 時使用 4 連線平行下載（需暫存檔案），否則退回串流單線程（無暫存檔案）。相容 S3 Presigned URL。
-- **`parallel`** — 強制 4 連線平行下載；若伺服器不支援 Range 請求或無 `Content-Length` 則報錯
+- **`auto`（預設）** — 以 `GET Range: bytes=0-0` 請求探測伺服器後自動選擇：伺服器回應 `206 Partial Content` 且 ≥ 64 MB 時使用平行下載（連線數依檔案大小自動調整：< 256 MiB 用 2 條、256 MiB–1 GiB 用 4 條、1–4 GiB 用 8 條、≥ 4 GiB 用 12 條；可透過 `download_connections` 覆寫），否則退回串流單線程（無暫存檔案）。相容 S3 Presigned URL。
+- **`parallel`** — 強制平行下載，連線數同樣依檔案大小自動調整；若伺服器不支援 Range 請求或無 `Content-Length` 則報錯
 - **`single`** — 強制單線程串流，HTTP 回應直接導入 tar reader，完全不寫入暫存檔案
 
 通用特性：
@@ -111,10 +113,11 @@ bluemap-action/
 
 ### `internal/bluemap`
 
-管理 BlueMap CLI 的下載與執行：
+管理 BlueMap CLI 的下載、執行與自訂腳本執行：
 
 - `EnsureCLI()` — 若 jar 不存在則下載，使用 `.tmp` 暫存再 rename（原子寫入，避免不完整檔案）
 - `Render()` — 執行 `java -jar <jar> -v <mcVersion> -r`，即時串流 stdout/stderr
+- `RunScripts()` — 依字母順序探索並執行 `scripts/` 子目錄中的 `.py` 與 `.sh` 腳本；若目錄不存在則自動略過
 
 ### `internal/lang`
 
@@ -160,7 +163,7 @@ BlueMap 翻譯檔案部署：
 備份下載策略透過 `config.toml` 的 `download_mode` 欄位設定：
 
 - **`auto`（預設）** — 探測伺服器後自動選擇最佳策略
-- **`parallel`** — 強制 4 連線平行下載（適合大型備份）
+- **`parallel`** — 強制平行下載，連線數依檔案大小自動調整（適合大型備份）
 - **`single`** — 強制串流，不寫入暫存檔案（最低磁碟 I/O）
 
 平行下載需要暫存檔案（同一檔案系統以避免跨裝置 rename 問題），各 worker 透過 `WriteAt` 寫入對應偏移量，下載完成後循序讀取進行解壓。串流模式則直接將 HTTP 回應導入 tar reader，完全不接觸磁碟。

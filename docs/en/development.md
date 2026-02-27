@@ -93,7 +93,7 @@ The workflow consists of two jobs:
 
 #### 1. `check-cache` — Cache Detection & Runner Selection
 
-Runs on the `runs-on-cache-miss` runner to ensure it shares the same cache backend as the build job. Uses `actions/cache/restore` with `lookup-only: true` to probe for an existing `web/maps` cache without downloading files.
+Runs on the `runs-on-cache-hit` runner (lightweight cache lookup only). Uses `actions/cache/restore` with `lookup-only: true` to probe for an existing `web/maps` cache without downloading files.
 
 - **Cache found** → selects the smaller `runs-on-cache-hit` runner for the build job
 - **No cache** → selects the larger `runs-on-cache-miss` runner for the build job
@@ -124,7 +124,7 @@ The `check-cache` job automatically selects the appropriate runner size based on
 - **Cache hit (incremental render)** — Uses the smaller `runs-on-cache-hit` runner (default: 2 vCPU), since only changed chunks need re-rendering
 - **Cache miss (full render)** — Uses the larger `runs-on-cache-miss` runner (default: 8 vCPU), needed for full map rendering
 
-The `check-cache` probe job itself runs on the `runs-on-cache-miss` runner to ensure it can access the same cache backend where caches are saved.
+The `check-cache` probe job runs on the `runs-on-cache-hit` runner since the cache lookup is lightweight and does not require the larger machine.
 
 ### Testing the Reusable Workflow
 

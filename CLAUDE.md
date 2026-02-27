@@ -26,10 +26,8 @@ bluemap-action/
 │   │   └── files/               # Embedded .conf language files (en, settings, zh-CN, zh-TW, zh-HK)
 │   ├── netlify/deploy.go        # Generates netlify.toml for static hosting
 │   └── pterodactyl/client.go    # Pterodactyl panel Client API integration
-├── onlinemap-01/                # Example server configuration
-│   ├── config.toml              # Server-specific config
-│   ├── config/                  # BlueMap configuration files
-│   └── web/                     # BlueMap web output directory
+├── test/
+│   └── test-onlinemap/          # Example server configuration for testing
 ├── .github/workflows/           # CI/CD workflows
 ├── go.mod                       # Go 1.24.7, single dependency (BurntSushi/toml)
 └── go.sum
@@ -48,7 +46,7 @@ go build -ldflags "-X main.version=$(git describe --tags --always --dirty)" \
 # Run against a server directory
 export PTERODACTYL_PANEL_URL="https://panel.example.com"
 export PTERODACTYL_API_KEY="your-api-key"
-./bluemap-action -dir onlinemap-01
+./bluemap-action -dir test/test-onlinemap
 ```
 
 ### Version resolution

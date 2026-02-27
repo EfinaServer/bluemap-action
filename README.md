@@ -43,6 +43,7 @@ mc_version      = "1.21.11"      # Minecraft 版本
 bluemap_version = "5.16"         # BlueMap CLI 版本
 name            = "My Server"    # 顯示名稱（選填）
 # download_mode = "auto"         # 下載模式（選填）："auto" | "parallel" | "single"
+# download_connections = 0       # 平行下載連線數（選填）：0 = 自動調整 | 1-32 = 固定
 ```
 
 > 完整設定說明見 [docs/configuration.md](docs/configuration.md)。
@@ -107,7 +108,7 @@ jobs:
 
 工作流程由兩個 job 組成：
 
-**1. `check-cache`** — 探測是否存在 `web/maps` 快取（在 `runs-on-cache-miss` runner 上執行），根據快取狀態選擇建置 job 使用的 runner。
+**1. `check-cache`** — 探測是否存在 `web/maps` 快取（在 `runs-on-cache-hit` runner 上執行），根據快取狀態選擇建置 job 使用的 runner。
 
 **2. `build-map`** — 在 `check-cache` 選定的 runner 上執行：
 

@@ -43,6 +43,7 @@ mc_version      = "1.21.11"      # Minecraft version
 bluemap_version = "5.16"         # BlueMap CLI version
 name            = "My Server"    # Display name (optional)
 # download_mode = "auto"         # Download mode (optional): "auto" | "parallel" | "single"
+# download_connections = 0       # Parallel connections (optional): 0 = auto-scale | 1-32 = fixed
 ```
 
 > See [docs/en/configuration.md](docs/en/configuration.md) for full configuration reference.
@@ -107,7 +108,7 @@ jobs:
 
 The workflow runs two jobs:
 
-**1. `check-cache`** — Probes for existing `web/maps` cache (runs on `runs-on-cache-miss` runner) and selects the appropriate runner for the build job based on cache availability.
+**1. `check-cache`** — Probes for existing `web/maps` cache (runs on `runs-on-cache-hit` runner) and selects the appropriate runner for the build job based on cache availability.
 
 **2. `build-map`** — Runs on the runner selected by `check-cache`:
 

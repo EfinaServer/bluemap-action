@@ -448,12 +448,13 @@ func writeFile(path string, r io.Reader, mode os.FileMode) error {
 	defer f.Close()
 
 	// Limit copy size to 10 GB as a safety measure against malformed archives.
+	// Use limit+1 so a file of exactly limit bytes is not falsely rejected.
 	const limit = 10 << 30 // 10 GB
-	lr := &io.LimitedReader{R: r, N: limit}
-	if _, err = io.Copy(f, lr); err != nil {
+	n, err := io.Copy(f, io.LimitReader(r, limit+1))
+	if err != nil {
 		return err
 	}
-	if lr.N == 0 {
+	if n > limit {
 		return fmt.Errorf("file exceeds maximum allowed size of %d bytes", limit)
 	}
 	return nil
