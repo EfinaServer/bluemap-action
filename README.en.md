@@ -103,7 +103,13 @@ jobs:
 | `PTERODACTYL_API_KEY` | **Yes** | Pterodactyl client API key |
 | `NETLIFY_AUTH_TOKEN` | Conditional | Netlify auth token (required when `deploy-to-netlify` is `true`) |
 
-### Workflow Steps
+### Workflow Jobs
+
+The workflow runs two jobs:
+
+**1. `check-cache`** — Probes for existing `web/maps` cache (runs on `runs-on-cache-miss` runner) and selects the appropriate runner for the build job based on cache availability.
+
+**2. `build-map`** — Runs on the runner selected by `check-cache`:
 
 ```
 Checkout → Set up Java → Download bluemap-action → Restore cache → Build map → Deploy to Netlify

@@ -49,7 +49,7 @@ on:
 
 jobs:
   check-cache:
-    runs-on: ${{ inputs.runs-on-cache-hit }}
+    runs-on: ${{ inputs.runs-on-cache-miss }}
     outputs:
       runner: ${{ steps.select-runner.outputs.runner }}
     steps:
@@ -66,8 +66,8 @@ jobs:
       - name: Select runner
         id: select-runner
         run: |
-          if [ -n "${{ steps.cache-check.outputs.cache-matched-key }}" ]; then
-            echo "Cache found (key: ${{ steps.cache-check.outputs.cache-matched-key }}) — using smaller runner"
+          if [ "${{ steps.cache-check.outputs.cache-hit }}" = "true" ]; then
+            echo "Cache found — using smaller runner"
             echo "runner=${{ inputs.runs-on-cache-hit }}" >> "$GITHUB_OUTPUT"
           else
             echo "No cache — using larger runner"
