@@ -52,7 +52,7 @@ name = "My Server"
 
 | Mode | Description |
 |---|---|
-| `auto` (default) | Auto-detect: sends a HEAD request to probe the server. Uses 4 parallel connections if the server advertises `Accept-Ranges: bytes` and the file is ≥ 64 MB; otherwise falls back to single-connection streaming (no temp file). |
+| `auto` (default) | Auto-detect: sends a Range probe (`GET` with `Range: bytes=0-0`) to test the server. Uses 4 parallel connections if the server responds with `206 Partial Content` and the file is ≥ 64 MB; otherwise falls back to single-connection streaming (no temp file). This approach is compatible with S3 Presigned URLs, which are typically signed for GET only. |
 | `parallel` | Force 4-connection parallel download. Returns an error if the server does not support Range requests or does not return `Content-Length`. |
 | `single` | Force single-connection streaming — pipes the HTTP response body directly into the tar reader with **no temp file written to disk**. |
 
