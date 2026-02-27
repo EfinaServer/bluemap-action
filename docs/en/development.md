@@ -87,7 +87,20 @@ GitHub Actions will automatically handle building and publishing.
 
 The reusable workflow is defined in `.github/workflows/build-map.yml` and can be called directly by other repositories.
 
-### Workflow Steps
+### Workflow Jobs
+
+The workflow consists of two jobs:
+
+#### 1. `check-cache` — Cache Detection & Runner Selection
+
+Runs on the `runs-on-cache-miss` runner to ensure it shares the same cache backend as the build job. Uses `actions/cache/restore` with `lookup-only: true` to probe for an existing `web/maps` cache without downloading files.
+
+- **Cache found** → selects the smaller `runs-on-cache-hit` runner for the build job
+- **No cache** → selects the larger `runs-on-cache-miss` runner for the build job
+
+#### 2. `build-map` — Build & Deploy
+
+Runs on the runner selected by `check-cache`. Steps:
 
 1. **Checkout** — Check out the caller repository
 2. **Set up Java** — Install Temurin JDK (default 21)
@@ -103,6 +116,15 @@ The workflow uses `actions/cache` to cache the `web/maps` directory. BlueMap CLI
 Cache key format:
 - Primary key: `bluemap-maps-{server-directory}-{run-id}`
 - Restore key: `bluemap-maps-{server-directory}-` (matches the most recent cache)
+
+### Cost Optimization
+
+The `check-cache` job automatically selects the appropriate runner size based on cache availability:
+
+- **Cache hit (incremental render)** — Uses the smaller `runs-on-cache-hit` runner (default: 2 vCPU), since only changed chunks need re-rendering
+- **Cache miss (full render)** — Uses the larger `runs-on-cache-miss` runner (default: 8 vCPU), needed for full map rendering
+
+The `check-cache` probe job itself runs on the `runs-on-cache-miss` runner to ensure it can access the same cache backend where caches are saved.
 
 ### Testing the Reusable Workflow
 

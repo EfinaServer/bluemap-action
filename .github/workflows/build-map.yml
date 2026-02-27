@@ -49,7 +49,7 @@ on:
 
 jobs:
   check-cache:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs-on-cache-miss }}
     outputs:
       runner: ${{ steps.select-runner.outputs.runner }}
     steps:

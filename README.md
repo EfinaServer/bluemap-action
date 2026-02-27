@@ -103,7 +103,13 @@ jobs:
 | `PTERODACTYL_API_KEY` | **是** | Pterodactyl client API key |
 | `NETLIFY_AUTH_TOKEN` | 條件性 | Netlify 認證 token（`deploy-to-netlify` 為 `true` 時必填） |
 
-### 工作流程執行步驟
+### 工作流程 Jobs
+
+工作流程由兩個 job 組成：
+
+**1. `check-cache`** — 探測是否存在 `web/maps` 快取（在 `runs-on-cache-miss` runner 上執行），根據快取狀態選擇建置 job 使用的 runner。
+
+**2. `build-map`** — 在 `check-cache` 選定的 runner 上執行：
 
 ```
 Checkout → 安裝 Java → 下載 bluemap-action → 還原快取 → 建置地圖 → 部署至 Netlify
