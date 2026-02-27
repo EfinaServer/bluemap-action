@@ -92,7 +92,7 @@ bluemap-action/
 
 處理備份檔案的下載與解壓，支援三種下載模式（由 `config.toml` 的 `download_mode` 控制）：
 
-- **`auto`（預設）** — 探測伺服器後自動選擇：支援 `Accept-Ranges: bytes` 且 ≥ 64 MB 時使用 4 連線平行下載（需暫存檔案），否則退回串流單線程（無暫存檔案）
+- **`auto`（預設）** — 以 `GET Range: bytes=0-0` 請求探測伺服器後自動選擇：伺服器回應 `206 Partial Content` 且 ≥ 64 MB 時使用 4 連線平行下載（需暫存檔案），否則退回串流單線程（無暫存檔案）。相容 S3 Presigned URL。
 - **`parallel`** — 強制 4 連線平行下載；若伺服器不支援 Range 請求或無 `Content-Length` 則報錯
 - **`single`** — 強制單線程串流，HTTP 回應直接導入 tar reader，完全不寫入暫存檔案
 

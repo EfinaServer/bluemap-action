@@ -52,7 +52,7 @@ name = "My Server"
 
 | 模式 | 說明 |
 |---|---|
-| `auto`（預設） | 自動偵測：先送出 HEAD 請求探測伺服器，若支援 `Accept-Ranges: bytes` 且檔案 ≥ 64 MB 則使用 4 個連線平行下載；否則退回單線程串流（不寫入暫存檔案） |
+| `auto`（預設） | 自動偵測：送出 Range 探測請求（`GET` 搭配 `Range: bytes=0-0`）測試伺服器，若伺服器回應 `206 Partial Content` 且檔案 ≥ 64 MB 則使用 4 個連線平行下載；否則退回單線程串流（不寫入暫存檔案）。此方式相容於 S3 Presigned URL（預設僅簽署 GET 方法）。 |
 | `parallel` | 強制使用 4 個連線平行下載。若伺服器不支援 Range 請求或未回傳 `Content-Length`，則工具會報錯並終止 |
 | `single` | 強制使用單線程串流，將 HTTP 回應直接導入 tar reader，**不寫入任何暫存檔案**到磁碟 |
 

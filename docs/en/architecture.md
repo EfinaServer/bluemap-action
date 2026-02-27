@@ -94,7 +94,7 @@ Encapsulates Pterodactyl panel Client API interactions:
 
 Handles backup file download and decompression. Supports three download modes controlled by `download_mode` in `config.toml`:
 
-- **`auto` (default)** — probes the server and chooses automatically: uses 4 parallel connections (temp file required) when `Accept-Ranges: bytes` is advertised and size ≥ 64 MB; otherwise falls back to single-connection streaming (no temp file)
+- **`auto` (default)** — probes the server with a `GET Range: bytes=0-0` request and chooses automatically: uses 4 parallel connections (temp file required) when the server responds with `206 Partial Content` and size ≥ 64 MB; otherwise falls back to single-connection streaming (no temp file). Compatible with S3 Presigned URLs.
 - **`parallel`** — forces 4-connection parallel download; returns an error if the server does not support Range requests or does not return `Content-Length`
 - **`single`** — forces single-connection streaming, piping the HTTP response directly into the tar reader with no temp file written to disk
 

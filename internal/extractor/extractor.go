@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -32,7 +33,7 @@ const (
 //   - "auto"     — probe the server; use parallel if it supports Range requests
 //     and the file is ≥ 64 MB, otherwise stream directly (no temp file).
 //   - "parallel" — force 4-connection parallel download; returns an error if
-//     the server does not advertise Accept-Ranges: bytes or Content-Length.
+//     the server does not support Range requests or does not report Content-Length.
 //   - "single"   — force a single HTTP connection and stream the response body
 //     directly into the tar reader without writing a temp file to disk.
 //
@@ -150,16 +151,21 @@ func downloadStreamExtract(downloadURL, outputDir string, worlds []string) error
 	return extractWorlds(io.LimitReader(resp.Body, limit), outputDir, worlds)
 }
 
-// probeDownload sends a HEAD request to discover the content length and whether
-// the server supports HTTP Range requests. Returns (0, false, nil) on any
-// failure so the caller can fall back to single-threaded download.
+// probeDownload sends a GET request with Range: bytes=0-0 to discover whether
+// the server supports HTTP Range requests and to determine the total content
+// length. Using GET instead of HEAD ensures compatibility with S3 Presigned
+// URLs, which are typically signed only for the GET method.
+//
+// Returns (0, false, nil) on any non-fatal failure so the caller can
+// gracefully fall back to single-connection download.
 func probeDownload(url string) (contentLength int64, rangeSupported bool, err error) {
 	client := &http.Client{Timeout: 30 * time.Second}
 
-	req, err := http.NewRequest(http.MethodHead, url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return 0, false, nil
 	}
+	req.Header.Set("Range", "bytes=0-0")
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -167,13 +173,52 @@ func probeDownload(url string) (contentLength int64, rangeSupported bool, err er
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	// Drain the response body so the underlying TCP connection can be reused.
+	// Capped at 1 KiB to avoid accidentally streaming a large body when the
+	// server ignores the Range header and returns 200 with the full file.
+	io.CopyN(io.Discard, resp.Body, 1024)
+
+	switch resp.StatusCode {
+	case http.StatusPartialContent: // 206 — server supports Range requests
+		cl, ok := parseContentRange(resp.Header.Get("Content-Range"))
+		if !ok || cl <= 0 {
+			return 0, false, nil
+		}
+		return cl, true, nil
+
+	case http.StatusOK: // 200 — server ignored Range header; no Range support
+		cl := resp.ContentLength
+		if cl <= 0 {
+			return 0, false, nil
+		}
+		return cl, false, nil
+
+	default:
 		return 0, false, nil
 	}
+}
 
-	cl := resp.ContentLength
-	ar := strings.ToLower(resp.Header.Get("Accept-Ranges"))
-	return cl, ar == "bytes" && cl > 0, nil
+// parseContentRange extracts the total size from a Content-Range header value.
+// The expected format is "bytes START-END/TOTAL" (e.g. "bytes 0-0/123456789").
+// Returns (total, true) on success, or (0, false) if the header is missing,
+// malformed, or uses "*" for the total.
+func parseContentRange(header string) (int64, bool) {
+	if header == "" {
+		return 0, false
+	}
+	slashIdx := strings.LastIndex(header, "/")
+	if slashIdx < 0 || slashIdx == len(header)-1 {
+		return 0, false
+	}
+	totalStr := header[slashIdx+1:]
+	if totalStr == "*" {
+		return 0, false
+	}
+	total, err := strconv.ParseInt(totalStr, 10, 64)
+	if err != nil {
+		return 0, false
+	}
+	return total, true
 }
 
 // downloadParallel downloads the resource at url using numWorkers parallel
