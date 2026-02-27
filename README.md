@@ -87,7 +87,7 @@ jobs:
 
 | 名稱 | 必填 | 預設值 | 說明 |
 |---|---|---|---|
-| `server-directory` | **是** | — | 包含 `config.toml` 的伺服器目錄名稱 |
+| `server-directory` | 否 | `.` | 包含 `config.toml` 的伺服器目錄（省略時使用專案根目錄） |
 | `runs-on-cache-hit` | 否 | `blacksmith-2vcpu-ubuntu-2404` | 有快取時使用的 runner（增量渲染，較小機器） |
 | `runs-on-cache-miss` | 否 | `blacksmith-8vcpu-ubuntu-2404` | 無快取時使用的 runner（完整渲染，較大機器） |
 | `bluemap-action-version` | 否 | `latest` | bluemap-action 的 release tag（例如 `v1.0.0`） |
@@ -123,6 +123,41 @@ Checkout → 安裝 Java → 下載 bluemap-action → 還原快取 → 建置�
 6. **Deploy to Netlify** — 將渲染完成的靜態網站部署至 Netlify（可選）
 
 ## 使用範例
+
+### 單一伺服器（根目錄）
+
+當 repository 只有一張地圖時，可以將設定直接放在根目錄，省略 `server-directory`：
+
+```
+your-repo/
+├── config.toml
+├── config/
+│   ├── core.conf
+│   ├── webapp.conf
+│   ├── maps/
+│   └── storages/
+└── .github/workflows/
+    └── build-map.yml
+```
+
+```yaml
+name: Build Map
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: EfinaServer/bluemap-action/.github/workflows/build-map.yml@main
+    with:
+      netlify-site-id: your-netlify-site-id
+    secrets:
+      PTERODACTYL_PANEL_URL: ${{ secrets.PTERODACTYL_PANEL_URL }}
+      PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+```
 
 ### 完整選項
 

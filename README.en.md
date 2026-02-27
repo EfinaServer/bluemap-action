@@ -87,7 +87,7 @@ jobs:
 
 | Name | Required | Default | Description |
 |---|---|---|---|
-| `server-directory` | **Yes** | — | Server directory containing `config.toml` |
+| `server-directory` | No | `.` | Server directory containing `config.toml` (defaults to project root) |
 | `runs-on-cache-hit` | No | `blacksmith-2vcpu-ubuntu-2404` | Runner when cache exists (smaller machine for incremental render) |
 | `runs-on-cache-miss` | No | `blacksmith-8vcpu-ubuntu-2404` | Runner when no cache (larger machine for full render) |
 | `bluemap-action-version` | No | `latest` | bluemap-action release tag (e.g. `v1.0.0`) |
@@ -123,6 +123,41 @@ Checkout → Set up Java → Download bluemap-action → Restore cache → Build
 6. **Deploy to Netlify** — Deploy rendered static site to Netlify (optional)
 
 ## Usage Examples
+
+### Single Server (Project Root)
+
+When your repository contains only one map, place the config directly at the project root and omit `server-directory`:
+
+```
+your-repo/
+├── config.toml
+├── config/
+│   ├── core.conf
+│   ├── webapp.conf
+│   ├── maps/
+│   └── storages/
+└── .github/workflows/
+    └── build-map.yml
+```
+
+```yaml
+name: Build Map
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: EfinaServer/bluemap-action/.github/workflows/build-map.yml@main
+    with:
+      netlify-site-id: your-netlify-site-id
+    secrets:
+      PTERODACTYL_PANEL_URL: ${{ secrets.PTERODACTYL_PANEL_URL }}
+      PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+```
 
 ### All Options
 
