@@ -20,13 +20,14 @@ const (
 
 // ServerConfig represents the TOML config for a single server directory.
 type ServerConfig struct {
-	ServerID         string `toml:"server_id"`
-	ServerType       string `toml:"server_type"`
-	WorldName        string `toml:"world_name"`
-	Name             string `toml:"name"`
-	MinecraftVersion string `toml:"mc_version"`
-	BlueMapVersion   string `toml:"bluemap_version"`
-	DownloadMode     string `toml:"download_mode"` // "auto" (default) | "parallel" | "single"
+	ServerID            string `toml:"server_id"`
+	ServerType          string `toml:"server_type"`
+	WorldName           string `toml:"world_name"`
+	Name                string `toml:"name"`
+	MinecraftVersion    string `toml:"mc_version"`
+	BlueMapVersion      string `toml:"bluemap_version"`
+	DownloadMode        string `toml:"download_mode"`        // "auto" (default) | "parallel" | "single"
+	DownloadConnections int    `toml:"download_connections"` // 0 = auto (scale by file size) | 1-32 = fixed count
 }
 
 // ResolveDownloadMode returns the effective download mode, defaulting to
@@ -36,6 +37,12 @@ func (c *ServerConfig) ResolveDownloadMode() string {
 		return DownloadModeAuto
 	}
 	return c.DownloadMode
+}
+
+// ResolveDownloadConnections returns the configured number of download
+// connections. A value of 0 means automatic (scale by file size).
+func (c *ServerConfig) ResolveDownloadConnections() int {
+	return c.DownloadConnections
 }
 
 // ResolveWorlds returns the list of world folder names to extract from the
@@ -106,6 +113,11 @@ func Load(dir string) (LoadedServer, error) {
 		return LoadedServer{}, fmt.Errorf(
 			"%s: download_mode must be %q, %q, or %q, got %q",
 			configPath, DownloadModeAuto, DownloadModeParallel, DownloadModeSingle, cfg.DownloadMode)
+	}
+	if cfg.DownloadConnections < 0 || cfg.DownloadConnections > 32 {
+		return LoadedServer{}, fmt.Errorf(
+			"%s: download_connections must be between 0 and 32, got %d",
+			configPath, cfg.DownloadConnections)
 	}
 
 	absDir, err := filepath.Abs(dir)

@@ -84,6 +84,7 @@ mc_version      = "1.21.11"      # Minecraft version for rendering
 bluemap_version = "5.16"         # BlueMap CLI version to download
 name            = "My Server"    # Optional display name (defaults to directory name)
 # download_mode = "auto"         # Optional: "auto" (default) | "parallel" | "single"
+# download_connections = 0       # Optional: 0 (default, auto-scale by file size) | 1-32 (fixed count)
 ```
 
 ### Server types
@@ -102,7 +103,8 @@ name            = "My Server"    # Optional display name (defaults to directory 
 
 - **Single dependency** — Only `github.com/BurntSushi/toml` for config parsing. Everything else uses the Go standard library.
 - **Embedded language files** — Language `.conf` files are compiled into the binary via `//go:embed`. Placeholders (`{toolVersion}`, `{minecraftVersion}`, `{projectName}`, `{renderTime}`) are substituted at runtime.
-- **Three download modes** — Controlled by `download_mode` in `config.toml` (`auto` / `parallel` / `single`). In `auto` mode the server is probed with a `GET Range: bytes=0-0` request: if it responds with `206 Partial Content` and the backup is ≥ 64 MB, 4 parallel HTTP Range connections are used (temp file required); otherwise the response body is streamed directly into the tar reader (no temp file). Using GET instead of HEAD for probing ensures compatibility with S3 Presigned URLs, which are typically signed for GET only. `parallel` forces multi-connection and errors if Range or Content-Length is absent. `single` forces streaming. The log line always states which mode was chosen and the reason.
+- **Three download modes** — Controlled by `download_mode` in `config.toml` (`auto` / `parallel` / `single`). In `auto` mode the server is probed with a `GET Range: bytes=0-0` request: if it responds with `206 Partial Content` and the backup is ≥ 64 MB, parallel HTTP Range connections are used (temp file required); otherwise the response body is streamed directly into the tar reader (no temp file). Using GET instead of HEAD for probing ensures compatibility with S3 Presigned URLs, which are typically signed for GET only. `parallel` forces multi-connection and errors if Range or Content-Length is absent. `single` forces streaming. The log line always states which mode was chosen and the reason.
+- **Adaptive connection count** — The number of parallel connections scales automatically based on file size: 2 for < 256 MiB, 4 for 256 MiB–1 GiB, 8 for 1–4 GiB, and 12 for ≥ 4 GiB. The `download_connections` config option (1–32) overrides this with a fixed count when set.
 - **Temp-file extraction (parallel only)** — Parallel download pre-allocates a temporary `.backup-*.tar.gz` file (same filesystem as the output directory to avoid cross-device rename issues), each worker writes its chunk via `WriteAt`, then the file is re-opened for sequential tar.gz extraction. The temp file is removed on completion.
 - **Path traversal protection** — The extractor validates that all extracted paths stay within the output directory.
 - **Atomic file writes** — BlueMap CLI jar downloads use a `.tmp` file with rename to prevent partial files.

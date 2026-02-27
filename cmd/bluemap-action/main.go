@@ -213,7 +213,12 @@ func main() {
 	fmt.Printf("    worlds:             %v\n", worlds)
 	fmt.Printf("    minecraft version:  %s\n", srv.Config.MinecraftVersion)
 	fmt.Printf("    bluemap version:    %s\n", srv.Config.BlueMapVersion)
-	fmt.Printf("    download mode:      %s\n\n", srv.Config.ResolveDownloadMode())
+	fmt.Printf("    download mode:      %s\n", srv.Config.ResolveDownloadMode())
+	if srv.Config.DownloadConnections > 0 {
+		fmt.Printf("    download conns:     %d (manual)\n\n", srv.Config.DownloadConnections)
+	} else {
+		fmt.Printf("    download conns:     auto\n\n")
+	}
 
 	// Step 1: Download and extract world data from Pterodactyl backup.
 	client := pterodactyl.NewClient(panelURL, apiKey)
@@ -237,7 +242,11 @@ func main() {
 	fmt.Printf("⬇️   Downloading and extracting worlds: %v\n", worlds)
 
 	downloadStart := time.Now()
-	if err := extractor.DownloadAndExtractWorlds(downloadURL, srv.Dir, worlds, srv.Config.ResolveDownloadMode()); err != nil {
+	dlOpts := extractor.DownloadOptions{
+		Mode:        srv.Config.ResolveDownloadMode(),
+		Connections: srv.Config.ResolveDownloadConnections(),
+	}
+	if err := extractor.DownloadAndExtractWorlds(downloadURL, srv.Dir, worlds, dlOpts); err != nil {
 		log.Fatalf("💥  error extracting worlds: %v", err)
 	}
 	downloadDur := time.Since(downloadStart)
