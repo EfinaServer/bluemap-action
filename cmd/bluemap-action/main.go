@@ -74,7 +74,9 @@ type buildSummary struct {
 	renderDur      time.Duration
 	worldRows      []analyzer.WorldSummaryRow
 	worldTotal     int64
-	webOutputSize  int64
+	webTotalSize   int64
+	webFileCount   int64
+	webMaxFileSize int64
 }
 
 // writeGitHubSummary writes a Markdown summary to $GITHUB_STEP_SUMMARY when
@@ -149,7 +151,9 @@ func writeGitHubSummary(sum *buildSummary) {
 	sb.WriteString("### 📊 Web Output\n\n")
 	sb.WriteString("| Property | Value |\n")
 	sb.WriteString("|:---|---:|\n")
-	sb.WriteString(fmt.Sprintf("| **Total Size** | %s |\n", analyzer.FormatSize(sum.webOutputSize)))
+	sb.WriteString(fmt.Sprintf("| **Total Size** | %s |\n", analyzer.FormatSize(sum.webTotalSize)))
+	sb.WriteString(fmt.Sprintf("| **File Count** | %d |\n", sum.webFileCount))
+	sb.WriteString(fmt.Sprintf("| **Largest File** | %s |\n", analyzer.FormatSize(sum.webMaxFileSize)))
 	sb.WriteString("\n")
 
 	if _, err := f.WriteString(sb.String()); err != nil {
@@ -309,13 +313,17 @@ func main() {
 
 	// Step 9: Analyze web output size after rendering.
 	fmt.Println()
-	webSize, err := analyzer.AnalyzeWebOutput(srv.Dir)
+	webReport, err := analyzer.AnalyzeWebOutput(srv.Dir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "⚠️  could not analyze web output: %v\n", err)
 	} else {
-		sum.webOutputSize = webSize
+		sum.webTotalSize = webReport.TotalSize
+		sum.webFileCount = webReport.FileCount
+		sum.webMaxFileSize = webReport.MaxFileSize
 		fmt.Printf("📊  Web Output Analysis\n")
-		fmt.Printf("    web/ total size:  %s\n", analyzer.FormatSize(webSize))
+		fmt.Printf("    web/ total size:   %s\n", analyzer.FormatSize(webReport.TotalSize))
+		fmt.Printf("    web/ file count:   %d\n", webReport.FileCount)
+		fmt.Printf("    web/ largest file: %s\n", analyzer.FormatSize(webReport.MaxFileSize))
 	}
 
 	// Write GitHub Step Summary (no-op if not running inside GitHub Actions).

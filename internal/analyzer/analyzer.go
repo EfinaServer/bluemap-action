@@ -187,17 +187,39 @@ func PrintWorldAnalysis(serverType, serverDir string, worlds []string) (int64, [
 	return grandTotal, rows
 }
 
-// AnalyzeWebOutput reports the total size of the web output directory.
-func AnalyzeWebOutput(serverDir string) (int64, error) {
+// WebOutputReport holds statistics for the web output directory.
+type WebOutputReport struct {
+	TotalSize   int64
+	FileCount   int64
+	MaxFileSize int64
+}
+
+// AnalyzeWebOutput reports statistics for the web output directory.
+func AnalyzeWebOutput(serverDir string) (*WebOutputReport, error) {
 	webDir := filepath.Join(serverDir, "web")
 	info, err := os.Stat(webDir)
 	if err != nil {
-		return 0, fmt.Errorf("web directory not found: %w", err)
+		return nil, fmt.Errorf("web directory not found: %w", err)
 	}
 	if !info.IsDir() {
-		return 0, fmt.Errorf("web path is not a directory")
+		return nil, fmt.Errorf("web path is not a directory")
 	}
-	return DirSize(webDir)
+
+	var report WebOutputReport
+	err = filepath.Walk(webDir, func(_ string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			report.TotalSize += info.Size()
+			report.FileCount++
+			if info.Size() > report.MaxFileSize {
+				report.MaxFileSize = info.Size()
+			}
+		}
+		return nil
+	})
+	return &report, err
 }
 
 // FormatSize formats bytes into human-readable size string.

@@ -68,7 +68,7 @@ The tool runs a sequential 9-step pipeline (`cmd/bluemap-action/main.go`):
 6. **Run custom scripts** — If a `scripts/` directory exists in the server directory, execute all `.py` and `.sh` scripts in alphabetical order (optional, skipped if directory absent)
 7. **Render** — Execute `java -jar bluemap-cli.jar -v <mcVersion> -r`
 8. **Rewrite asset refs** — Rewrite `.prbm` → `.prbm.gz` and `/textures.json` → `/textures.json.gz` in the generated JS bundle so Netlify serves pre-compressed files directly
-9. **Analyze output** — Report total `web/` directory size
+9. **Analyze output** — Report total size, file count, and largest file in `web/`
 
 ## Configuration
 
