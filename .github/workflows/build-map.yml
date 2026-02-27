@@ -50,7 +50,7 @@ on:
 
 jobs:
   check-cache:
-    runs-on: ${{ inputs.runs-on-cache-miss }}
+    runs-on: ${{ inputs.runs-on-cache-hit }}
     outputs:
       runner: ${{ steps.select-runner.outputs.runner }}
       cache-label: ${{ steps.cache-label.outputs.label }}
