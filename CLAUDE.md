@@ -11,13 +11,14 @@ Guide for AI assistants working on **bluemap-action**.
 ```
 bluemap-action/
 ├── cmd/bluemap-action/
-│   └── main.go                  # CLI entry point (8-step pipeline)
+│   └── main.go                  # CLI entry point (9-step pipeline)
 ├── internal/
 │   ├── analyzer/analyzer.go     # World and web output size reporting
 │   ├── assets/assets.go         # Rewrites web asset references to compressed variants
 │   ├── bluemap/
 │   │   ├── download.go          # BlueMap CLI jar download from GitHub Releases
-│   │   └── render.go            # Executes BlueMap CLI via java -jar
+│   │   ├── render.go            # Executes BlueMap CLI via java -jar
+│   │   └── scripts.go           # Runs custom scripts from scripts/ directory
 │   ├── config/config.go         # TOML config parsing and validation
 │   ├── extractor/extractor.go   # tar.gz backup download and world extraction
 │   ├── lang/
@@ -59,16 +60,17 @@ The binary version is determined in this order:
 
 ## Execution Pipeline
 
-The tool runs a sequential 8-step pipeline (`cmd/bluemap-action/main.go`):
+The tool runs a sequential 9-step pipeline (`cmd/bluemap-action/main.go`):
 
 1. **Download & extract** — Fetch latest successful backup from Pterodactyl, extract world directories from tar.gz
 2. **Analyze worlds** — Report extracted world sizes (dimension breakdown for vanilla, per-folder for plugin)
 3. **Download BlueMap CLI** — Fetch the jar from GitHub Releases (cached if already present)
 4. **Deploy language files** — Copy embedded `.conf` files to `web/lang/`, substituting placeholders
 5. **Deploy netlify.toml** — Write static site config (SPA redirect, gzip headers)
-6. **Render** — Execute `java -jar bluemap-cli.jar -v <mcVersion> -r`
-7. **Rewrite asset refs** — Rewrite `.prbm` → `.prbm.gz` and `/textures.json` → `/textures.json.gz` in the generated JS bundle so Netlify serves pre-compressed files directly
-8. **Analyze output** — Report total `web/` directory size
+6. **Run custom scripts** — If a `scripts/` directory exists in the server directory, execute all `.py` and `.sh` scripts in alphabetical order (optional, skipped if directory absent)
+7. **Render** — Execute `java -jar bluemap-cli.jar -v <mcVersion> -r`
+8. **Rewrite asset refs** — Rewrite `.prbm` → `.prbm.gz` and `/textures.json` → `/textures.json.gz` in the generated JS bundle so Netlify serves pre-compressed files directly
+9. **Analyze output** — Report total `web/` directory size
 
 ## Configuration
 
@@ -110,6 +112,7 @@ name            = "My Server"    # Optional display name (defaults to directory 
 
 - **Go 1.24.7+** for building
 - **Java runtime** for BlueMap CLI execution
+- **Python 3** (optional) — only needed if a server's `scripts/` directory contains `.py` scripts
 - Network access to: Pterodactyl panel API, GitHub Releases (BlueMap CLI download)
 
 ## Code Conventions
