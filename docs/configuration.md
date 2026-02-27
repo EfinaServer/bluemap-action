@@ -32,6 +32,11 @@ name = "My Server"
 # "parallel" — 強制多線程（需要伺服器支援 Range 請求與 Content-Length）
 # "single"   — 強制單線程串流（不寫入暫存檔案）
 # download_mode = "auto"
+
+# 平行下載連線數（選填，預設為 0 = 依檔案大小自動調整）
+# 0 = 自動：< 256 MiB 用 2 條、256 MiB–1 GiB 用 4 條、1–4 GiB 用 8 條、≥ 4 GiB 用 12 條
+# 1–32 = 固定連線數
+# download_connections = 0
 ```
 
 ### 欄位說明
@@ -45,6 +50,7 @@ name = "My Server"
 | `bluemap_version` | **是** | 要下載使用的 BlueMap CLI 版本 |
 | `name` | 否 | 專案顯示名稱，會出現在語言檔案的頁尾資訊中 |
 | `download_mode` | 否 | 備份下載模式：`"auto"`（預設）、`"parallel"` 或 `"single"`（見下方說明） |
+| `download_connections` | 否 | 平行下載連線數：`0`（預設，依檔案大小自動調整）或 `1`–`32`（固定連線數） |
 
 ### 下載模式
 
@@ -52,8 +58,8 @@ name = "My Server"
 
 | 模式 | 說明 |
 |---|---|
-| `auto`（預設） | 自動偵測：送出 Range 探測請求（`GET` 搭配 `Range: bytes=0-0`）測試伺服器，若伺服器回應 `206 Partial Content` 且檔案 ≥ 64 MB 則使用 4 個連線平行下載；否則退回單線程串流（不寫入暫存檔案）。此方式相容於 S3 Presigned URL（預設僅簽署 GET 方法）。 |
-| `parallel` | 強制使用 4 個連線平行下載。若伺服器不支援 Range 請求或未回傳 `Content-Length`，則工具會報錯並終止 |
+| `auto`（預設） | 自動偵測：送出 Range 探測請求（`GET` 搭配 `Range: bytes=0-0`）測試伺服器，若伺服器回應 `206 Partial Content` 且檔案 ≥ 64 MB 則使用平行下載（連線數依檔案大小自動調整：< 256 MiB 用 2 條、256 MiB–1 GiB 用 4 條、1–4 GiB 用 8 條、≥ 4 GiB 用 12 條；可透過 `download_connections` 覆寫）；否則退回單線程串流（不寫入暫存檔案）。此方式相容於 S3 Presigned URL（預設僅簽署 GET 方法）。 |
+| `parallel` | 強制使用平行下載，連線數同樣依檔案大小自動調整。若伺服器不支援 Range 請求或未回傳 `Content-Length`，則工具會報錯並終止 |
 | `single` | 強制使用單線程串流，將 HTTP 回應直接導入 tar reader，**不寫入任何暫存檔案**到磁碟 |
 
 > **何時使用 `parallel`？** 備份超過 64 MB 且你知道伺服器支援 Range 請求時，可強制使用以確保多線程下載。

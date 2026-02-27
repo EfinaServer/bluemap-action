@@ -32,6 +32,11 @@ name = "My Server"
 # "parallel" — force multi-connection (requires Range request support and Content-Length)
 # "single"   — force single-connection streaming (no temp file written to disk)
 # download_mode = "auto"
+
+# Number of parallel download connections (optional, defaults to 0 = auto-scale by file size)
+# 0 = auto: 2 for <256 MiB, 4 for 256 MiB–1 GiB, 8 for 1–4 GiB, 12 for ≥4 GiB
+# 1–32 = fixed connection count override
+# download_connections = 0
 ```
 
 ### Field Reference
@@ -45,6 +50,7 @@ name = "My Server"
 | `bluemap_version` | **Yes** | BlueMap CLI version to download and use |
 | `name` | No | Project display name, shown in the language file footer |
 | `download_mode` | No | Backup download strategy: `"auto"` (default), `"parallel"`, or `"single"` (see below) |
+| `download_connections` | No | Number of parallel connections: `0` (default, auto-scale by file size) or `1`–`32` (fixed count) |
 
 ### Download Mode
 
@@ -52,8 +58,8 @@ name = "My Server"
 
 | Mode | Description |
 |---|---|
-| `auto` (default) | Auto-detect: sends a Range probe (`GET` with `Range: bytes=0-0`) to test the server. Uses 4 parallel connections if the server responds with `206 Partial Content` and the file is ≥ 64 MB; otherwise falls back to single-connection streaming (no temp file). This approach is compatible with S3 Presigned URLs, which are typically signed for GET only. |
-| `parallel` | Force 4-connection parallel download. Returns an error if the server does not support Range requests or does not return `Content-Length`. |
+| `auto` (default) | Auto-detect: sends a Range probe (`GET` with `Range: bytes=0-0`) to test the server. Uses parallel connections (count scales automatically by file size: 2 for <256 MiB, 4 for 256 MiB–1 GiB, 8 for 1–4 GiB, 12 for ≥4 GiB; overridable via `download_connections`) if the server responds with `206 Partial Content` and the file is ≥ 64 MB; otherwise falls back to single-connection streaming (no temp file). Compatible with S3 Presigned URLs, which are typically signed for GET only. |
+| `parallel` | Force parallel download with adaptive connection scaling. Returns an error if the server does not support Range requests or does not return `Content-Length`. |
 | `single` | Force single-connection streaming — pipes the HTTP response body directly into the tar reader with **no temp file written to disk**. |
 
 > **When to use `parallel`?** When the backup is large and you know the server supports Range requests, this forces multi-connection regardless of the auto threshold.

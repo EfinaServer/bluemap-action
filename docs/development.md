@@ -93,7 +93,7 @@ Reusable workflow 定義在 `.github/workflows/build-map.yml`，其他 repositor
 
 #### 1. `check-cache` — 快取偵測與 Runner 選擇
 
-在 `runs-on-cache-miss` runner 上執行，確保與建置 job 共享相同的快取後端。使用 `actions/cache/restore` 搭配 `lookup-only: true` 探測是否存在 `web/maps` 快取，不會下載檔案。
+在 `runs-on-cache-hit` runner 上執行（快取查詢為輕量操作，不需要較大的機器）。使用 `actions/cache/restore` 搭配 `lookup-only: true` 探測是否存在 `web/maps` 快取，不會下載檔案。
 
 - **有快取** → 選擇較小的 `runs-on-cache-hit` runner 執行建置 job
 - **無快取** → 選擇較大的 `runs-on-cache-miss` runner 執行建置 job
@@ -124,7 +124,7 @@ Reusable workflow 定義在 `.github/workflows/build-map.yml`，其他 repositor
 - **有快取（增量渲染）** — 使用較小的 `runs-on-cache-hit` runner（預設：2 vCPU），僅需重新渲染變動的區塊
 - **無快取（完整渲染）** — 使用較大的 `runs-on-cache-miss` runner（預設：8 vCPU），需要完整渲染地圖
 
-`check-cache` 探測 job 本身在 `runs-on-cache-miss` runner 上執行，確保能存取與快取儲存相同的快取後端。
+`check-cache` 探測 job 在 `runs-on-cache-hit` runner 上執行，因為快取查詢為輕量操作，不需要較大的機器。
 
 ### 測試 Reusable Workflow
 

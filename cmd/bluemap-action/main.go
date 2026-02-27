@@ -64,7 +64,6 @@ type buildSummary struct {
 	serverID       string
 	serverType     string
 	worldName      string
-	worlds         []string
 	mcVersion      string
 	blueMapVersion string
 	renderTime     string
@@ -175,7 +174,7 @@ func main() {
 	toolVersion := getVersion()
 	loc, err := time.LoadLocation("Asia/Taipei")
 	if err != nil {
-		panic(err)
+		log.Fatalf("loading timezone: %v", err)
 	}
 
 	renderTime := time.Now().In(loc).Format("2006-01-02 15:04 MST")
@@ -201,7 +200,6 @@ func main() {
 		serverID:       srv.Config.ServerID,
 		serverType:     srv.Config.ServerType,
 		worldName:      srv.Config.WorldName,
-		worlds:         worlds,
 		mcVersion:      srv.Config.MinecraftVersion,
 		blueMapVersion: srv.Config.BlueMapVersion,
 		renderTime:     renderTime,

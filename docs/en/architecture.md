@@ -15,7 +15,8 @@ bluemap-action/
 │   ├── assets/assets.go         # Static asset compression reference rewriting
 │   ├── bluemap/
 │   │   ├── download.go          # Download BlueMap CLI jar from GitHub Releases
-│   │   └── render.go            # Execute BlueMap CLI rendering via java -jar
+│   │   ├── render.go            # Execute BlueMap CLI rendering via java -jar
+│   │   └── scripts.go           # Run custom scripts from scripts/ directory
 │   ├── config/config.go         # TOML config parsing and validation
 │   ├── extractor/extractor.go   # tar.gz backup download and world directory extraction
 │   ├── lang/
@@ -36,32 +37,33 @@ bluemap-action/
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ 1. Load Config                                                  │
-│    Read config.toml and validate required fields                │
-├─────────────────────────────────────────────────────────────────┤
-│ 2. Download & Extract Worlds                                    │
+│ 1. Download & Extract Worlds                                    │
 │    Get latest successful backup from Pterodactyl → stream       │
 │    decompress tar.gz → extract only matching world directories  │
 ├─────────────────────────────────────────────────────────────────┤
-│ 3. Analyze World Sizes                                          │
+│ 2. Analyze World Sizes                                          │
 │    Report extracted world sizes                                 │
 │    (vanilla: dimension breakdown / plugin: per-folder)          │
 ├─────────────────────────────────────────────────────────────────┤
-│ 4. Download BlueMap CLI                                         │
+│ 3. Download BlueMap CLI                                         │
 │    Fetch jar from GitHub Releases (skip if already cached)      │
 ├─────────────────────────────────────────────────────────────────┤
-│ 5. Deploy Language Files                                        │
+│ 4. Deploy Language Files                                        │
 │    Copy embedded .conf files to web/lang/, substitute           │
 │    placeholders                                                 │
 ├─────────────────────────────────────────────────────────────────┤
-│ 6. Deploy netlify.toml                                          │
+│ 5. Deploy netlify.toml                                          │
 │    Write static site config (SPA redirect, gzip headers)        │
+├─────────────────────────────────────────────────────────────────┤
+│ 6. Run Custom Scripts                                           │
+│    Execute .py and .sh scripts from scripts/ in alphabetical    │
+│    order (skipped if scripts/ directory does not exist)         │
 ├─────────────────────────────────────────────────────────────────┤
 │ 7. Render                                                       │
 │    Execute java -jar bluemap-cli.jar -v <mcVersion> -r          │
 ├─────────────────────────────────────────────────────────────────┤
 │ 8. Rewrite Asset References                                     │
-│    Rewrite .prbm → .prbm.gz, .json → .json.gz                  │
+│    Rewrite .prbm → .prbm.gz, /textures.json → /textures.json.gz│
 ├─────────────────────────────────────────────────────────────────┤
 │ 9. Analyze Output                                               │
 │    Report total web/ directory size                              │
@@ -94,8 +96,8 @@ Encapsulates Pterodactyl panel Client API interactions:
 
 Handles backup file download and decompression. Supports three download modes controlled by `download_mode` in `config.toml`:
 
-- **`auto` (default)** — probes the server with a `GET Range: bytes=0-0` request and chooses automatically: uses 4 parallel connections (temp file required) when the server responds with `206 Partial Content` and size ≥ 64 MB; otherwise falls back to single-connection streaming (no temp file). Compatible with S3 Presigned URLs.
-- **`parallel`** — forces 4-connection parallel download; returns an error if the server does not support Range requests or does not return `Content-Length`
+- **`auto` (default)** — probes the server with a `GET Range: bytes=0-0` request and chooses automatically: uses parallel connections (count scales automatically by file size: 2 for <256 MiB, 4 for 256 MiB–1 GiB, 8 for 1–4 GiB, 12 for ≥4 GiB; overridable via `download_connections`) when the server responds with `206 Partial Content` and size ≥ 64 MB; otherwise falls back to single-connection streaming (no temp file). Compatible with S3 Presigned URLs.
+- **`parallel`** — forces parallel download with the same adaptive connection scaling; returns an error if the server does not support Range requests or does not return `Content-Length`
 - **`single`** — forces single-connection streaming, piping the HTTP response directly into the tar reader with no temp file written to disk
 
 Common features:
@@ -113,10 +115,11 @@ Parses TOML config files and validates required fields:
 
 ### `internal/bluemap`
 
-Manages BlueMap CLI download and execution:
+Manages BlueMap CLI download, execution, and custom script running:
 
 - `EnsureCLI()` — Download jar if not present, using `.tmp` file with rename (atomic write to prevent incomplete files)
 - `Render()` — Execute `java -jar <jar> -v <mcVersion> -r`, streaming stdout/stderr in real time
+- `RunScripts()` — Discover and execute `.py` and `.sh` scripts from the `scripts/` subdirectory in alphabetical order; silently skipped if the directory does not exist
 
 ### `internal/lang`
 
@@ -162,7 +165,7 @@ The project depends only on `github.com/BurntSushi/toml` for config parsing. Eve
 The backup download strategy is configured via `download_mode` in `config.toml`:
 
 - **`auto` (default)** — probes the server and selects the best strategy automatically
-- **`parallel`** — forces 4-connection parallel download (best for large backups)
+- **`parallel`** — forces parallel download with adaptive connection scaling (best for large backups)
 - **`single`** — forces streaming with no temp file (lowest disk I/O)
 
 Parallel download requires a temp file on the same filesystem as the output directory (to avoid cross-device rename issues); each worker writes to its byte offset via `WriteAt`, then the file is re-opened for sequential extraction. Single/streaming mode pipes the HTTP response body directly into the tar reader and never touches the local disk for the archive.
