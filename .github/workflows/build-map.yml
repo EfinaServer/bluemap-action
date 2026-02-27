@@ -59,6 +59,8 @@ jobs:
         with:
           path: ${{ inputs.server-directory }}/web/maps
           key: bluemap-maps-${{ inputs.server-directory }}-
+          restore-keys: |
+            bluemap-maps-${{ inputs.server-directory }}-
           lookup-only: true
 
       - name: Select runner
