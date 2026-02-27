@@ -17,54 +17,78 @@ import (
 )
 
 const (
-	// downloadWorkers is the number of parallel HTTP connections used when the
-	// server supports Range requests.
-	downloadWorkers = 4
-
 	// minParallelSize is the minimum backup size to trigger parallel download.
 	// Small files are not worth the overhead of spawning multiple connections.
 	minParallelSize = 64 << 20 // 64 MB
 )
 
+// DownloadOptions configures the download behavior.
+type DownloadOptions struct {
+	Mode        string // "auto", "parallel", "single"
+	Connections int    // 0 = auto (size-based scaling), >0 = manual override (1-32)
+}
+
+// connectionCount returns the number of parallel download connections to use
+// based on the file size. Larger files benefit from more connections because a
+// single HTTP stream rarely saturates a high-bandwidth link.
+func connectionCount(contentLength int64) int {
+	switch {
+	case contentLength < 256<<20: // < 256 MiB
+		return 2
+	case contentLength < 1<<30: // 256 MiB – 1 GiB
+		return 4
+	case contentLength < 4<<30: // 1 GiB – 4 GiB
+		return 8
+	default: // >= 4 GiB
+		return 12
+	}
+}
+
 // DownloadAndExtractWorlds downloads a backup from the given URL and extracts
 // only the specified world directories into outputDir.
 //
-// mode selects the download strategy:
+// opts.Mode selects the download strategy:
 //   - "auto"     — probe the server; use parallel if it supports Range requests
 //     and the file is ≥ 64 MB, otherwise stream directly (no temp file).
-//   - "parallel" — force 4-connection parallel download; returns an error if
-//     the server does not support Range requests or does not report Content-Length.
+//   - "parallel" — force parallel download; returns an error if the server does
+//     not support Range requests or does not report Content-Length.
 //   - "single"   — force a single HTTP connection and stream the response body
 //     directly into the tar reader without writing a temp file to disk.
+//
+// opts.Connections overrides the automatic connection count when > 0.
 //
 // The backup is expected to be a tar.gz archive. World folders are matched by
 // checking if a tar entry path starts with one of the world names (e.g.
 // "world/", "world_nether/").
-func DownloadAndExtractWorlds(downloadURL, outputDir string, worlds []string, mode string) error {
-	switch mode {
+func DownloadAndExtractWorlds(downloadURL, outputDir string, worlds []string, opts DownloadOptions) error {
+	switch opts.Mode {
 	case "parallel":
-		return downloadParallelExtract(downloadURL, outputDir, worlds)
+		return downloadParallelExtract(downloadURL, outputDir, worlds, opts.Connections)
 	case "single":
 		fmt.Println("  → single-connection download (streaming, forced)")
 		return downloadStreamExtract(downloadURL, outputDir, worlds)
 	default: // "auto"
-		return downloadAutoExtract(downloadURL, outputDir, worlds)
+		return downloadAutoExtract(downloadURL, outputDir, worlds, opts.Connections)
 	}
 }
 
 // downloadAutoExtract probes the server and chooses the best strategy:
 // parallel (temp file) when Range is supported and size ≥ 64 MB, otherwise
 // a single streaming connection (no temp file).
-func downloadAutoExtract(downloadURL, outputDir string, worlds []string) error {
+func downloadAutoExtract(downloadURL, outputDir string, worlds []string, connOverride int) error {
 	contentLength, rangeOK, err := probeDownload(downloadURL)
 	if err != nil {
 		return fmt.Errorf("probing download URL: %w", err)
 	}
 
 	if rangeOK && contentLength >= minParallelSize {
+		numWorkers := connectionCount(contentLength)
+		if connOverride > 0 {
+			numWorkers = connOverride
+		}
 		fmt.Printf("  → parallel download (%d connections, %s)\n",
-			downloadWorkers, formatBytes(contentLength))
-		return parallelDownloadAndExtract(downloadURL, outputDir, worlds, contentLength, downloadWorkers)
+			numWorkers, formatBytes(contentLength))
+		return parallelDownloadAndExtract(downloadURL, outputDir, worlds, contentLength, numWorkers)
 	}
 
 	// Log why we are falling back to a single connection.
@@ -85,7 +109,7 @@ func downloadAutoExtract(downloadURL, outputDir string, worlds []string) error {
 
 // downloadParallelExtract forces parallel download. It probes the server first
 // and returns an error if Range requests or Content-Length are not available.
-func downloadParallelExtract(downloadURL, outputDir string, worlds []string) error {
+func downloadParallelExtract(downloadURL, outputDir string, worlds []string, connOverride int) error {
 	contentLength, rangeOK, err := probeDownload(downloadURL)
 	if err != nil {
 		return fmt.Errorf("probing download URL: %w", err)
@@ -96,9 +120,15 @@ func downloadParallelExtract(downloadURL, outputDir string, worlds []string) err
 	if contentLength <= 0 {
 		return fmt.Errorf("server did not return Content-Length; cannot use parallel download mode")
 	}
+
+	numWorkers := connectionCount(contentLength)
+	if connOverride > 0 {
+		numWorkers = connOverride
+	}
+
 	fmt.Printf("  → parallel download (%d connections, %s, forced)\n",
-		downloadWorkers, formatBytes(contentLength))
-	return parallelDownloadAndExtract(downloadURL, outputDir, worlds, contentLength, downloadWorkers)
+		numWorkers, formatBytes(contentLength))
+	return parallelDownloadAndExtract(downloadURL, outputDir, worlds, contentLength, numWorkers)
 }
 
 // parallelDownloadAndExtract downloads the file in parallel into a temp file,
