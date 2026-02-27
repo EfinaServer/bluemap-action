@@ -14,9 +14,10 @@ on:
         type: string
         default: "blacksmith-8vcpu-ubuntu-2404"
       server-directory:
-        description: "Server directory containing config.toml (e.g. onlinemap-01)"
-        required: true
+        description: "Server directory containing config.toml (use '.' for project root)"
+        required: false
         type: string
+        default: "."
       bluemap-action-version:
         description: "bluemap-action release tag to use (e.g. v1.0.0). Defaults to latest."
         required: false
@@ -52,15 +53,28 @@ jobs:
     runs-on: ${{ inputs.runs-on-cache-miss }}
     outputs:
       runner: ${{ steps.select-runner.outputs.runner }}
+      cache-label: ${{ steps.cache-label.outputs.label }}
     steps:
+      - name: Compute cache label
+        id: cache-label
+        run: |
+          dir="${{ inputs.server-directory }}"
+          if [ "$dir" = "." ] || [ -z "$dir" ]; then
+            label="${{ github.event.repository.name }}"
+          else
+            label="$(echo "$dir" | sed 's:/*$::' | tr '/' '-')"
+          fi
+          echo "label=$label" >> "$GITHUB_OUTPUT"
+          echo "Cache label: $label"
+
       - name: Check web/maps cache
         id: cache-check
         uses: actions/cache/restore@v5
         with:
           path: ${{ inputs.server-directory }}/web/maps
-          key: bluemap-maps-${{ inputs.server-directory }}-
+          key: bluemap-maps-${{ steps.cache-label.outputs.label }}-
           restore-keys: |
-            bluemap-maps-${{ inputs.server-directory }}-
+            bluemap-maps-${{ steps.cache-label.outputs.label }}-
           lookup-only: true
 
       - name: Select runner
@@ -110,9 +124,9 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ${{ inputs.server-directory }}/web/maps
-          key: bluemap-maps-${{ inputs.server-directory }}-${{ github.run_id }}
+          key: bluemap-maps-${{ needs.check-cache.outputs.cache-label }}-${{ github.run_id }}
           restore-keys: |
-            bluemap-maps-${{ inputs.server-directory }}-
+            bluemap-maps-${{ needs.check-cache.outputs.cache-label }}-
 
       - name: Build map
         env:
