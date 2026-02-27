@@ -17,8 +17,8 @@ bluemap-action/
 │   ├── assets/assets.go         # Rewrites web asset references to compressed variants
 │   ├── bluemap/
 │   │   ├── download.go          # BlueMap CLI jar download from GitHub Releases
-│   │   ├── markers.go           # Optional marker generation via per-server Python script
-│   │   └── render.go            # Executes BlueMap CLI via java -jar
+│   │   ├── render.go            # Executes BlueMap CLI via java -jar
+│   │   └── scripts.go           # Runs custom scripts from scripts/ directory
 │   ├── config/config.go         # TOML config parsing and validation
 │   ├── extractor/extractor.go   # tar.gz backup download and world extraction
 │   ├── lang/
@@ -67,7 +67,7 @@ The tool runs a sequential 9-step pipeline (`cmd/bluemap-action/main.go`):
 3. **Download BlueMap CLI** — Fetch the jar from GitHub Releases (cached if already present)
 4. **Deploy language files** — Copy embedded `.conf` files to `web/lang/`, substituting placeholders
 5. **Deploy netlify.toml** — Write static site config (SPA redirect, gzip headers)
-6. **Generate markers** — If `generate_markers.py` exists in the server directory, execute it with `python3` to produce BlueMap marker config (optional, skipped if script absent)
+6. **Run custom scripts** — If a `scripts/` directory exists in the server directory, execute all `.py` and `.sh` scripts in alphabetical order (optional, skipped if directory absent)
 7. **Render** — Execute `java -jar bluemap-cli.jar -v <mcVersion> -r`
 8. **Rewrite asset refs** — Rewrite `.prbm` → `.prbm.gz` and `/textures.json` → `/textures.json.gz` in the generated JS bundle so Netlify serves pre-compressed files directly
 9. **Analyze output** — Report total `web/` directory size
@@ -112,7 +112,7 @@ name            = "My Server"    # Optional display name (defaults to directory 
 
 - **Go 1.24.7+** for building
 - **Java runtime** for BlueMap CLI execution
-- **Python 3** (optional) — only needed if a server directory contains `generate_markers.py` for dynamic marker generation
+- **Python 3** (optional) — only needed if a server's `scripts/` directory contains `.py` scripts
 - Network access to: Pterodactyl panel API, GitHub Releases (BlueMap CLI download)
 
 ## Code Conventions

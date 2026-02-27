@@ -279,10 +279,10 @@ func main() {
 		log.Fatalf("💥  error deploying netlify.toml: %v", err)
 	}
 
-	// Step 6: Generate BlueMap markers.
-	fmt.Printf("\n📌  Generating BlueMap markers...\n")
-	if err := bluemap.GenerateMarkers(srv.Dir); err != nil {
-		log.Fatalf("💥  error generating markers: %v", err)
+	// Step 6: Run custom scripts.
+	fmt.Printf("\n🔧  Running custom scripts...\n")
+	if err := bluemap.RunScripts(srv.Dir); err != nil {
+		log.Fatalf("💥  error running custom scripts: %v", err)
 	}
 
 	// Step 7: Execute BlueMap CLI rendering.
