@@ -279,7 +279,13 @@ func main() {
 		log.Fatalf("💥  error deploying netlify.toml: %v", err)
 	}
 
-	// Step 6: Execute BlueMap CLI rendering.
+	// Step 6: Generate BlueMap markers.
+	fmt.Printf("\n📌  Generating BlueMap markers...\n")
+	if err := bluemap.GenerateMarkers(srv.Dir); err != nil {
+		log.Fatalf("💥  error generating markers: %v", err)
+	}
+
+	// Step 7: Execute BlueMap CLI rendering.
 	fmt.Printf("\n🔨  Running BlueMap CLI render...\n")
 	renderDur, err := bluemap.Render(jarPath, srv.Dir, srv.Config.MinecraftVersion)
 	if err != nil {
@@ -288,13 +294,13 @@ func main() {
 	sum.renderDur = renderDur
 	fmt.Printf("⏱   Render took %s\n", fmtDuration(renderDur))
 
-	// Step 7: Rewrite asset references to compressed variants.
+	// Step 8: Rewrite asset references to compressed variants.
 	fmt.Printf("\n✏️   Rewriting asset references to compressed variants...\n")
 	if err := assets.RewriteCompressedRefs(srv.Dir); err != nil {
 		log.Fatalf("💥  error rewriting asset references: %v", err)
 	}
 
-	// Step 8: Analyze web output size after rendering.
+	// Step 9: Analyze web output size after rendering.
 	fmt.Println()
 	webSize, err := analyzer.AnalyzeWebOutput(srv.Dir)
 	if err != nil {
