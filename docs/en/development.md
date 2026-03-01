@@ -126,6 +126,23 @@ The `check-cache` job automatically selects the appropriate runner size based on
 
 The `check-cache` probe job runs on the `runs-on-cache-hit` runner since the cache lookup is lightweight and does not require the larger machine.
 
+### `refresh-cache.yml` — Cache Refresh
+
+GitHub Actions caches are automatically deleted after 7 days of not being accessed. While `build-map.yml` saves a new cache entry with a `run_id` key on each successful build (resetting the timer), a weekly render schedule sits right at the 7-day boundary — the cache could be evicted moments before the build starts, triggering an unexpected full render.
+
+`refresh-cache.yml` is designed to run every 5 days, proactively refreshing the cache before expiry:
+
+1. Restores the most recent `web/maps` cache using `restore-keys` (downloads to the runner)
+2. Saves the cache with a new `run_id` as the primary key at job end → creates a fresh entry, definitively resetting the 7-day timer
+3. Requires no checkout, Java, or Pterodactyl credentials — the smallest available runner suffices
+
+> **Why not just use `actions/cache/restore`?** GitHub's documentation states caches expire after "7 days of no access," but whether a restore (download) counts as "access" is not officially guaranteed. Using the full `actions/cache` (with save) ensures a new entry is created, explicitly resetting the timer without relying on undefined behavior.
+
+The cache key format is identical to `build-map.yml`, so caches are fully interchangeable between the two workflows:
+
+- Primary key: `bluemap-maps-{server-directory}-{run-id}`
+- Restore key: `bluemap-maps-{server-directory}-`
+
 ### Testing the Reusable Workflow
 
 The project provides `.github/workflows/test-reusable-workflow.yml`, which can be manually triggered to test the reusable workflow:

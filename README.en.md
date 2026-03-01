@@ -123,6 +123,44 @@ Checkout → Set up Java → Download bluemap-action → Restore cache → Build
 5. **Build map** — Run bluemap-action (download backup → extract worlds → render map)
 6. **Deploy to Netlify** — Deploy rendered static site to Netlify (optional)
 
+---
+
+### `refresh-cache.yml`
+
+Prevents GitHub Actions caches from being automatically deleted after 7 days of inactivity. With a weekly render schedule, the cache may be evicted right at the boundary before the build starts, triggering an unexpected full render. Run this workflow every 5 days to keep the cache alive.
+
+No secrets, Java, or Pterodactyl access required — the smallest available runner is sufficient.
+
+#### Inputs
+
+| Name | Required | Default | Description |
+|---|---|---|---|
+| `server-directory` | No | `.` | Server directory (must match the `server-directory` value used in `build-map.yml`) |
+| `runs-on` | No | `blacksmith-2vcpu-ubuntu-2404` | Runner to use (any small runner is sufficient) |
+
+#### Job
+
+| Job | Description |
+|---|---|
+| `refresh-cache` | Downloads the existing cache and saves it with a new key, resetting the 7-day eviction timer |
+
+#### Example
+
+```yaml
+name: Refresh Maps Cache
+
+on:
+  schedule:
+    - cron: "0 0 */5 * *"    # Every 5 days, ensuring cache stays under the 7-day limit
+  workflow_dispatch:
+
+jobs:
+  server-01:
+    uses: EfinaServer/bluemap-action/.github/workflows/refresh-cache.yml@main
+    with:
+      server-directory: onlinemap-01
+```
+
 ## Usage Examples
 
 ### Single Server (Project Root)
@@ -221,6 +259,31 @@ jobs:
       PTERODACTYL_PANEL_URL: ${{ secrets.PTERODACTYL_PANEL_URL }}
       PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+```
+
+### Preventing Cache Expiration
+
+With a weekly render schedule, create a separate refresh workflow that runs every 5 days to ensure the cache is always available when the build starts:
+
+```yaml
+name: Refresh Maps Cache
+
+on:
+  schedule:
+    - cron: "0 0 */5 * *"    # Every 5 days
+  workflow_dispatch:
+
+jobs:
+  server-01:
+    uses: EfinaServer/bluemap-action/.github/workflows/refresh-cache.yml@main
+    with:
+      server-directory: onlinemap-01
+
+  # Add one job per server for multi-server setups
+  server-02:
+    uses: EfinaServer/bluemap-action/.github/workflows/refresh-cache.yml@main
+    with:
+      server-directory: onlinemap-02
 ```
 
 ## Standalone Usage

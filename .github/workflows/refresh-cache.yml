@@ -1,0 +1,69 @@
+name: Refresh BlueMap Cache
+
+# Reusable workflow that downloads the existing web/maps cache and saves it
+# with a new key, resetting the 7-day GitHub Actions cache eviction timer.
+#
+# No secrets, Java, or Pterodactyl access required — use the smallest runner
+# available. Callers should schedule this every 4–5 days so the cache is
+# always fresh when the weekly build-map.yml run starts.
+#
+# Example caller workflow:
+#
+#   on:
+#     schedule:
+#       - cron: '0 0 */5 * *'   # Every 5 days
+#     workflow_dispatch: {}
+#
+#   jobs:
+#     refresh:
+#       uses: EfinaServer/bluemap-action/.github/workflows/refresh-cache.yml@main
+#       with:
+#         server-directory: my-server      # Must match the value used in build-map.yml
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        description: "Runner to use — any small runner is sufficient, no Java or secrets needed"
+        required: false
+        type: string
+        default: "blacksmith-2vcpu-ubuntu-2404"
+      server-directory:
+        description: "Server directory containing config.toml (must match the value used in build-map.yml)"
+        required: false
+        type: string
+        default: "."
+
+jobs:
+  refresh-cache:
+    runs-on: ${{ inputs.runs-on }}
+    steps:
+      - name: Compute cache label
+        id: cache-label
+        run: |
+          dir="${{ inputs.server-directory }}"
+          if [ "$dir" = "." ] || [ -z "$dir" ]; then
+            label="${{ github.event.repository.name }}"
+          else
+            label="$(echo "$dir" | sed 's:/*$::' | tr '/' '-')"
+          fi
+          echo "label=$label" >> "$GITHUB_OUTPUT"
+          echo "Cache label: $label"
+
+      - name: Restore and refresh web/maps cache
+        id: cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ inputs.server-directory }}/web/maps
+          key: bluemap-maps-${{ steps.cache-label.outputs.label }}-${{ github.run_id }}
+          restore-keys: |
+            bluemap-maps-${{ steps.cache-label.outputs.label }}-
+
+      - name: Report cache status
+        run: |
+          if [ -n "${{ steps.cache.outputs.cache-matched-key }}" ]; then
+            echo "Cache refreshed — matched: ${{ steps.cache.outputs.cache-matched-key }}"
+            echo "7-day eviction timer reset."
+          else
+            echo "::warning::No existing cache found to refresh. A full render will be needed on the next build."
+          fi

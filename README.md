@@ -123,6 +123,44 @@ Checkout → 安裝 Java → 下載 bluemap-action → 還原快取 → 建置�
 5. **Build map** — 執行 bluemap-action（下載備份 → 擷取世界 → 渲染地圖）
 6. **Deploy to Netlify** — 將渲染完成的靜態網站部署至 Netlify（可選）
 
+---
+
+### `refresh-cache.yml`
+
+防止 GitHub Actions 快取因 7 天未使用而被自動清除。若渲染週期為每週一次，快取可能在邊界時刻被清除，導致非預期的完整渲染。建議另行建立 workflow 每 5 天執行一次以保持快取有效。
+
+不需要任何 Secrets、Java 或 Pterodactyl 存取，使用最小 runner 即可。
+
+#### Inputs
+
+| 名稱 | 必填 | 預設值 | 說明 |
+|---|---|---|---|
+| `server-directory` | 否 | `.` | 伺服器目錄（必須與 `build-map.yml` 的 `server-directory` 一致） |
+| `runs-on` | 否 | `blacksmith-2vcpu-ubuntu-2404` | 使用的 runner（任何小型 runner 皆可） |
+
+#### Job
+
+| Job | 說明 |
+|---|---|
+| `refresh-cache` | 下載現有快取並以新 key 儲存，重設 7 天計時器 |
+
+#### 使用範例
+
+```yaml
+name: Refresh Maps Cache
+
+on:
+  schedule:
+    - cron: "0 0 */5 * *"    # 每 5 天，確保快取不超過 7 天
+  workflow_dispatch:
+
+jobs:
+  server-01:
+    uses: EfinaServer/bluemap-action/.github/workflows/refresh-cache.yml@main
+    with:
+      server-directory: onlinemap-01
+```
+
 ## 使用範例
 
 ### 單一伺服器（根目錄）
@@ -221,6 +259,31 @@ jobs:
       PTERODACTYL_PANEL_URL: ${{ secrets.PTERODACTYL_PANEL_URL }}
       PTERODACTYL_API_KEY: ${{ secrets.PTERODACTYL_API_KEY }}
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+```
+
+### 防止快取過期
+
+若渲染週期為每週一次，建立獨立的刷新 workflow 每 5 天執行一次，確保快取不會在渲染前到期：
+
+```yaml
+name: Refresh Maps Cache
+
+on:
+  schedule:
+    - cron: "0 0 */5 * *"    # 每 5 天
+  workflow_dispatch:
+
+jobs:
+  server-01:
+    uses: EfinaServer/bluemap-action/.github/workflows/refresh-cache.yml@main
+    with:
+      server-directory: onlinemap-01
+
+  # 多伺服器時各新增一個 job
+  server-02:
+    uses: EfinaServer/bluemap-action/.github/workflows/refresh-cache.yml@main
+    with:
+      server-directory: onlinemap-02
 ```
 
 ## 獨立使用

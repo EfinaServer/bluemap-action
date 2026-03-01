@@ -126,6 +126,23 @@ Reusable workflow 定義在 `.github/workflows/build-map.yml`，其他 repositor
 
 `check-cache` 探測 job 在 `runs-on-cache-hit` runner 上執行，因為快取查詢為輕量操作，不需要較大的機器。
 
+### `refresh-cache.yml` — 快取刷新
+
+GitHub Actions 快取超過 7 天未被存取即會被自動清除。`build-map.yml` 每次成功建置後會儲存含 `run_id` 的新快取 entry，理論上每次 build 都會重設計時器。但若渲染週期恰為 7 天，快取可能在 build 前的邊界時刻被清除，導致非預期的完整渲染。
+
+`refresh-cache.yml` 設計為每 5 天執行一次，在到期前主動刷新快取：
+
+1. 使用 `restore-keys` 還原最近一次的 `web/maps` 快取（下載至 runner）
+2. Job 結束時以新的 `run_id` 為主要 key 儲存快取 → 確實建立新 entry，重設 7 天計時器
+3. 不需要 checkout、Java 或 Pterodactyl 憑證，使用最小 runner 即可
+
+> **為何不只用 `actions/cache/restore`？** GitHub 文件指出快取「7 天未被存取」即過期，但「存取」是否包含 restore（下載）操作並無官方保證。使用完整的 `actions/cache`（含 save）可確保建立新 entry，明確重設計時器，不依賴未定義行為。
+
+快取 key 格式與 `build-map.yml` 相同，兩個 workflow 的快取可互相存取：
+
+- 主要鍵：`bluemap-maps-{server-directory}-{run-id}`
+- 還原鍵：`bluemap-maps-{server-directory}-`
+
 ### 測試 Reusable Workflow
 
 專案提供 `.github/workflows/test-reusable-workflow.yml`，可手動觸發來測試 reusable workflow：
