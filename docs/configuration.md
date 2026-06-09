@@ -12,7 +12,7 @@
 # Pterodactyl 伺服器識別碼（從面板 URL 或 API 取得）
 server_id = "8e22b0c9"
 
-# 伺服器類型："vanilla" 或 "plugin"
+# 伺服器類型："vanilla"、"plugin" 或 "unified"
 server_type = "vanilla"
 
 # 基礎世界資料夾名稱
@@ -44,7 +44,7 @@ name = "My Server"
 | 欄位 | 必填 | 說明 |
 |---|---|---|
 | `server_id` | **是** | Pterodactyl 伺服器識別碼，用於透過 API 存取備份 |
-| `server_type` | **是** | `"vanilla"` 或 `"plugin"`，決定世界資料夾結構（見下方說明） |
+| `server_type` | **是** | `"vanilla"`、`"plugin"` 或 `"unified"`，決定世界資料夾結構（見下方說明） |
 | `world_name` | **是** | 備份中基礎世界資料夾的名稱（通常為 `"world"`） |
 | `mc_version` | **是** | Minecraft 版本號，BlueMap CLI 需要此資訊來正確渲染 |
 | `bluemap_version` | **是** | 要下載使用的 BlueMap CLI 版本 |
@@ -96,6 +96,19 @@ world_the_end/   # 終界 (The End)
 - `{world_name}`
 - `{world_name}_nether`
 - `{world_name}_the_end`
+
+#### `unified`
+
+Minecraft 26.1 起，原版與插件伺服器**統一**使用同一種結構：所有維度都放在單一世界資料夾下的 `dimensions/<命名空間>/<維度>/`：
+
+```
+world/                                  # 主世界資料夾
+world/dimensions/minecraft/overworld/   # 主世界 (Overworld)
+world/dimensions/minecraft/the_nether/  # 地獄 (Nether)
+world/dimensions/minecraft/the_end/     # 終界 (The End)
+```
+
+設定 `server_type = "unified"` 時，工具僅擷取一個資料夾（`world_name` 指定的名稱），其中已包含所有維度。世界大小分析會掃描 `dimensions/*/*`，逐一列出每個維度（包含資料包或模組新增的自訂維度，例如 `dimensions/mymod/mydim`），其餘檔案（`level.dat`、`players`、`data`、`datapacks` 等）則歸入 `other` 列。
 
 ## 環境變數
 

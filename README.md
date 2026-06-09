@@ -37,7 +37,7 @@ onlinemap-01/
 
 ```toml
 server_id       = "8e22b0c9"     # Pterodactyl 伺服器識別碼
-server_type     = "vanilla"      # "vanilla" 或 "plugin"
+server_type     = "vanilla"      # "vanilla"、"plugin" 或 "unified"
 world_name      = "world"        # 世界資料夾名稱
 mc_version      = "1.21.11"      # Minecraft 版本
 bluemap_version = "5.16"         # BlueMap CLI 版本

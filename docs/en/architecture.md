@@ -43,7 +43,7 @@ bluemap-action/
 ├─────────────────────────────────────────────────────────────────┤
 │ 2. Analyze World Sizes                                          │
 │    Report extracted world sizes                                 │
-│    (vanilla: dimension breakdown / plugin: per-folder)          │
+│    (vanilla: dimensions / plugin: folders / unified: per-dim)   │
 ├─────────────────────────────────────────────────────────────────┤
 │ 3. Download BlueMap CLI                                         │
 │    Fetch jar from GitHub Releases (skip if already cached)      │
@@ -151,6 +151,7 @@ World file and output size analysis:
 
 - `AnalyzeVanillaWorld()` — Analyze vanilla server world sizes (overworld, nether, end)
 - `AnalyzeWorlds()` — Analyze plugin server world folder sizes
+- `AnalyzeUnifiedWorld()` — Analyze unified server world sizes, scanning `dimensions/*/*` to list each dimension
 - `AnalyzeWebOutput()` — Calculate total `web/` directory size
 - `FormatSize()` — Human-readable size formatting (B, KB, MB, GB)
 

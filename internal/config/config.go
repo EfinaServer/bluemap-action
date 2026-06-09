@@ -11,6 +11,7 @@ import (
 const (
 	ServerTypeVanilla = "vanilla"
 	ServerTypePlugin  = "plugin"
+	ServerTypeUnified = "unified"
 
 	// DownloadMode constants control how the backup is downloaded.
 	DownloadModeAuto     = "auto"     // Probe the server and choose the best mode.
@@ -53,6 +54,11 @@ func (c *ServerConfig) ResolveDownloadConnections() int {
 //
 // For plugin servers (Bukkit/Spigot/Paper), each dimension is a separate
 // top-level folder (world, world_nether, world_the_end).
+//
+// For unified servers (Minecraft 26.1+, vanilla and plugin alike), every
+// dimension lives under a single world folder at
+// world/dimensions/<namespace>/<dimension> (e.g.
+// world/dimensions/minecraft/the_nether), so only one folder is needed.
 func (c *ServerConfig) ResolveWorlds() []string {
 	name := c.WorldName
 	if name == "" {
@@ -60,7 +66,7 @@ func (c *ServerConfig) ResolveWorlds() []string {
 	}
 
 	switch c.ServerType {
-	case ServerTypeVanilla:
+	case ServerTypeVanilla, ServerTypeUnified:
 		return []string{name}
 	case ServerTypePlugin:
 		return []string{
@@ -92,10 +98,10 @@ func Load(dir string) (LoadedServer, error) {
 		return LoadedServer{}, fmt.Errorf("%s: server_id is required", configPath)
 	}
 	if cfg.ServerType == "" {
-		return LoadedServer{}, fmt.Errorf("%s: server_type is required (\"vanilla\" or \"plugin\")", configPath)
+		return LoadedServer{}, fmt.Errorf("%s: server_type is required (\"vanilla\", \"plugin\", or \"unified\")", configPath)
 	}
-	if cfg.ServerType != ServerTypeVanilla && cfg.ServerType != ServerTypePlugin {
-		return LoadedServer{}, fmt.Errorf("%s: server_type must be \"vanilla\" or \"plugin\", got %q", configPath, cfg.ServerType)
+	if cfg.ServerType != ServerTypeVanilla && cfg.ServerType != ServerTypePlugin && cfg.ServerType != ServerTypeUnified {
+		return LoadedServer{}, fmt.Errorf("%s: server_type must be \"vanilla\", \"plugin\", or \"unified\", got %q", configPath, cfg.ServerType)
 	}
 	if cfg.WorldName == "" {
 		return LoadedServer{}, fmt.Errorf("%s: world_name is required", configPath)

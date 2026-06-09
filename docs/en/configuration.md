@@ -12,7 +12,7 @@ Each server directory must contain a `config.toml` at its root. All fields are *
 # Pterodactyl server identifier (from panel URL or API)
 server_id = "8e22b0c9"
 
-# Server type: "vanilla" or "plugin"
+# Server type: "vanilla", "plugin", or "unified"
 server_type = "vanilla"
 
 # Base world folder name
@@ -44,7 +44,7 @@ name = "My Server"
 | Field | Required | Description |
 |---|---|---|
 | `server_id` | **Yes** | Pterodactyl server identifier, used to access backups via API |
-| `server_type` | **Yes** | `"vanilla"` or `"plugin"`, determines world folder structure (see below) |
+| `server_type` | **Yes** | `"vanilla"`, `"plugin"`, or `"unified"`, determines world folder structure (see below) |
 | `world_name` | **Yes** | Base world folder name in the backup (usually `"world"`) |
 | `mc_version` | **Yes** | Minecraft version number, required by BlueMap CLI for correct rendering |
 | `bluemap_version` | **Yes** | BlueMap CLI version to download and use |
@@ -96,6 +96,19 @@ When `server_type = "plugin"`, the tool extracts three folders:
 - `{world_name}`
 - `{world_name}_nether`
 - `{world_name}_the_end`
+
+#### `unified`
+
+Starting with Minecraft 26.1, vanilla and plugin servers alike use a **unified** structure: every dimension lives under a single world folder at `dimensions/<namespace>/<dimension>/`:
+
+```
+world/                                  # World folder
+world/dimensions/minecraft/overworld/   # Overworld
+world/dimensions/minecraft/the_nether/  # Nether
+world/dimensions/minecraft/the_end/     # The End
+```
+
+When `server_type = "unified"`, the tool extracts only one folder (the name specified by `world_name`), which already contains every dimension. World size analysis scans `dimensions/*/*` and reports each dimension individually (including datapack/mod dimensions such as `dimensions/mymod/mydim`); everything else (`level.dat`, `players`, `data`, `datapacks`, …) is grouped into an `other` row.
 
 ## Environment Variables
 

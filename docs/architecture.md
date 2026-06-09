@@ -42,7 +42,7 @@ bluemap-action/
 │    → 僅擷取對應的世界目錄                                    │
 ├─────────────────────────────────────────────────────────┤
 │ 2. 分析世界大小                                            │
-│    報告擷取的世界大小（vanilla: 維度細分 / plugin: 各資料夾）   │
+│    報告世界大小（vanilla 維度 / plugin 資料夾 / unified 各維度）│
 ├─────────────────────────────────────────────────────────┤
 │ 3. 下載 BlueMap CLI                                       │
 │    從 GitHub Releases 取得 jar（若已快取則跳過）              │
@@ -149,6 +149,7 @@ BlueMap 翻譯檔案部署：
 
 - `AnalyzeVanillaWorld()` — 分析 vanilla 伺服器的世界大小（主世界、地獄、終界）
 - `AnalyzeWorlds()` — 分析 plugin 伺服器的各世界資料夾大小
+- `AnalyzeUnifiedWorld()` — 分析 unified 伺服器的世界大小，掃描 `dimensions/*/*` 逐一列出各維度
 - `AnalyzeWebOutput()` — 計算 `web/` 目錄總大小
 - `FormatSize()` — 人類可讀的大小格式化（B、KB、MB、GB）
 

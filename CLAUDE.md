@@ -61,7 +61,7 @@ The binary version is determined in this order:
 The tool runs a sequential 9-step pipeline (`cmd/bluemap-action/main.go`):
 
 1. **Download & extract** — Fetch latest successful backup from Pterodactyl, extract world directories from tar.gz
-2. **Analyze worlds** — Report extracted world sizes (dimension breakdown for vanilla, per-folder for plugin)
+2. **Analyze worlds** — Report extracted world sizes (dimension breakdown for vanilla, per-folder for plugin, per-dimension scan for unified)
 3. **Download BlueMap CLI** — Fetch the jar from GitHub Releases (cached if already present)
 4. **Deploy language files** — Copy embedded `.conf` files to `web/lang/`, substituting placeholders
 5. **Deploy netlify.toml** — Write static site config (SPA redirect, gzip headers)
@@ -76,7 +76,7 @@ Each server directory needs a `config.toml`:
 
 ```toml
 server_id       = "8e22b0c9"    # Pterodactyl server identifier
-server_type     = "vanilla"      # "vanilla" or "plugin"
+server_type     = "vanilla"      # "vanilla", "plugin", or "unified"
 world_name      = "world"        # Base world folder name
 mc_version      = "1.21.11"      # Minecraft version for rendering
 bluemap_version = "5.16"         # BlueMap CLI version to download
@@ -89,6 +89,7 @@ name            = "My Server"    # Optional display name (defaults to directory 
 
 - **vanilla** — Dimensions are subdirectories: `world/`, `world/DIM-1/`, `world/DIM1/`. Only one folder extracted.
 - **plugin** — Dimensions are separate folders: `world/`, `world_nether/`, `world_the_end/`. All three extracted.
+- **unified** — Minecraft 26.1+ structure used by both vanilla and plugin servers: every dimension lives under `world/dimensions/<namespace>/<dimension>/` (e.g. `world/dimensions/minecraft/overworld/`, `.../the_nether/`, `.../the_end/`). Only one folder extracted; sizes are reported per dimension by scanning `dimensions/*/*`.
 
 ### Required environment variables
 

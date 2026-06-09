@@ -37,7 +37,7 @@ onlinemap-01/
 
 ```toml
 server_id       = "8e22b0c9"     # Pterodactyl server identifier
-server_type     = "vanilla"      # "vanilla" or "plugin"
+server_type     = "vanilla"      # "vanilla", "plugin", or "unified"
 world_name      = "world"        # World folder name
 mc_version      = "1.21.11"      # Minecraft version
 bluemap_version = "5.16"         # BlueMap CLI version

@@ -74,6 +74,25 @@ type DimensionReport struct {
 	Total     int64
 }
 
+// UnifiedDimension is a single dimension found under a unified world's
+// dimensions/ folder. Key is the BlueMap-style dimension key, e.g.
+// "minecraft:overworld" or "mymod:mydim".
+type UnifiedDimension struct {
+	Key  string
+	Size int64
+}
+
+// UnifiedReport holds size information for a unified world (Minecraft 26.1+),
+// broken down per dimension discovered under world/dimensions/<ns>/<dim>.
+// OtherSize covers everything else in the world folder (level.dat, players,
+// data, datapacks, …).
+type UnifiedReport struct {
+	WorldName  string
+	Dimensions []UnifiedDimension
+	OtherSize  int64
+	Total      int64
+}
+
 // AnalyzeWorlds reports the size of each world directory for plugin-type servers.
 func AnalyzeWorlds(serverDir string, worlds []string) ([]WorldReport, int64) {
 	var reports []WorldReport
@@ -137,6 +156,55 @@ func AnalyzeVanillaWorld(serverDir, worldName string) (*DimensionReport, error) 
 	return report, nil
 }
 
+// AnalyzeUnifiedWorld reports the size of a unified world directory (Minecraft
+// 26.1+), broken down per dimension. Dimensions are discovered by scanning two
+// levels under world/dimensions/ (namespace, then dimension), so datapack and
+// mod dimensions are reported alongside the vanilla ones. Everything outside
+// dimensions/ (level.dat, players, data, datapacks, …) is summed into OtherSize.
+func AnalyzeUnifiedWorld(serverDir, worldName string) (*UnifiedReport, error) {
+	worldPath := filepath.Join(serverDir, worldName)
+	info, err := os.Stat(worldPath)
+	if err != nil || !info.IsDir() {
+		return nil, fmt.Errorf("world directory %q not found", worldPath)
+	}
+
+	report := &UnifiedReport{WorldName: worldName}
+
+	// Walk dimensions/<namespace>/<dimension>. ReadDir returns entries sorted
+	// by name, so the output order is deterministic.
+	dimsRoot := filepath.Join(worldPath, "dimensions")
+	namespaces, err := os.ReadDir(dimsRoot)
+	if err == nil {
+		for _, ns := range namespaces {
+			if !ns.IsDir() {
+				continue
+			}
+			nsPath := filepath.Join(dimsRoot, ns.Name())
+			dims, err := os.ReadDir(nsPath)
+			if err != nil {
+				continue
+			}
+			for _, dim := range dims {
+				if !dim.IsDir() {
+					continue
+				}
+				size, _ := DirSize(filepath.Join(nsPath, dim.Name()))
+				report.Dimensions = append(report.Dimensions, UnifiedDimension{
+					Key:  ns.Name() + ":" + dim.Name(),
+					Size: size,
+				})
+				report.Total += size
+			}
+		}
+	}
+
+	// Everything in the world folder except the dimensions/ subtree.
+	report.OtherSize, _ = dirSizeExcluding(worldPath, []string{"dimensions"})
+	report.Total += report.OtherSize
+
+	return report, nil
+}
+
 // PrintWorldAnalysis prints world size analysis to stdout based on server type.
 // It also returns a slice of rows for use in the GitHub Step Summary.
 func PrintWorldAnalysis(serverType, serverDir string, worlds []string) (int64, []WorldSummaryRow) {
@@ -165,6 +233,24 @@ func PrintWorldAnalysis(serverType, serverDir string, worlds []string) (int64, [
 				fmt.Printf("    %-25s  %s\n", report.End.Name+" (end)", FormatSize(report.End.Size))
 				rows = append(rows, WorldSummaryRow{Label: report.End.Name + " (end)", Size: report.End.Size, Found: true})
 			}
+			grandTotal += report.Total
+		}
+
+	case config.ServerTypeUnified:
+		for _, w := range worlds {
+			report, err := AnalyzeUnifiedWorld(serverDir, w)
+			if err != nil {
+				fmt.Printf("    %-25s  (not found)\n", w)
+				rows = append(rows, WorldSummaryRow{Label: w, Found: false})
+				continue
+			}
+
+			for _, d := range report.Dimensions {
+				fmt.Printf("    %-25s  %s\n", d.Key, FormatSize(d.Size))
+				rows = append(rows, WorldSummaryRow{Label: d.Key, Size: d.Size, Found: true})
+			}
+			fmt.Printf("    %-25s  %s\n", w+" (other)", FormatSize(report.OtherSize))
+			rows = append(rows, WorldSummaryRow{Label: w + " (other)", Size: report.OtherSize, Found: true})
 			grandTotal += report.Total
 		}
 
