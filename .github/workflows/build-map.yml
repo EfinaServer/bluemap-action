@@ -27,7 +27,7 @@ on:
         description: "Java version for BlueMap CLI rendering"
         required: false
         type: string
-        default: "21"
+        default: "25"
       deploy-to-netlify:
         description: "Whether to deploy the rendered output to Netlify"
         required: false
